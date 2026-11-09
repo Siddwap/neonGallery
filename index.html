@@ -248,7 +248,6 @@
             justify-content: center;
             cursor: pointer;
             color: #00ffff;
-            font-size: 1.1rem;
             transition: all 0.3s;
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
         }
@@ -256,6 +255,17 @@
             background: rgba(0, 255, 255, 0.2);
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
             transform: scale(1.05);
+        }
+        
+        /* SVG Icon styling */
+        .icon-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         /* ---------- PAGINATION ---------- */
@@ -374,7 +384,8 @@
             .title { font-size: 0.9rem; }
             .page-btn { width: 40px; height: 40px; font-size: 0.9rem; }
             .action-row { gap: 8px; }
-            .icon-btn { width: 44px; height: 44px; font-size: 1rem; }
+            .icon-btn { width: 44px; height: 44px; }
+            .icon-btn svg { width: 18px; height: 18px; }
             .play-btn { font-size: 0.9rem; padding: 0.7rem 0; }
         }
     </style>
@@ -494,23 +505,30 @@
                 textArea.remove();
             }
 
-            // Function to Share Link
+            // FIXED: Function to Share Link (Telegram Native Fallback)
             async function shareLink(title, url) {
-                if (navigator.share) {
+                const shareData = {
+                    title: title,
+                    text: 'Watch this video on Neon Player!',
+                    url: url
+                };
+
+                if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
                     try {
-                        await navigator.share({
-                            title: title,
-                            text: 'Watch this video on Neon Player!',
-                            url: url
-                        });
+                        await navigator.share(shareData);
+                        return; // Successfully shared
                     } catch (err) {
-                        console.log('Share cancelled', err);
+                        // If user cancels or fails, do nothing
+                        if (err.name !== 'AbortError') {
+                            console.log('Share failed', err);
+                        }
+                        return;
                     }
-                } else {
-                    // Fallback if Web Share API not supported
-                    copyToClipboard(url);
-                    showToast('🔗 Web Share not supported. Link Copied!');
                 }
+                
+                // Fallback: Open Telegram Share URL (Works perfectly inside Telegram WebApp)
+                const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
+                window.open(tgShareUrl, '_blank');
             }
 
             // Smart function to extract ID
@@ -582,6 +600,10 @@
                 const watchlist = getWatchlist();
                 let html = '';
 
+                // SVG Icons (Copy & Share/Paper Plane)
+                const copyIcon = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+                const shareIcon = `<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+
                 videos.forEach(video => {
                     const title = video.title || 'Untitled video';
                     const thumbnail = video.thumbnail || 'https://via.placeholder.com/640x360/1a1f2a/00ffff?text=NO+THUMB';
@@ -609,8 +631,8 @@
                             </div>
                             <div class="action-row">
                                 <a href="${playerUrl}" target="_blank" rel="noopener noreferrer" class="play-btn">▶ PLAY</a>
-                                <button class="icon-btn copy-btn" data-url="${safeUrl}" title="Copy Link">📋</button>
-                                <button class="icon-btn share-btn" data-url="${safeUrl}" data-title="${safeTitle}" title="Share">📤</button>
+                                <button class="icon-btn copy-btn" data-url="${safeUrl}" title="Copy Link">${copyIcon}</button>
+                                <button class="icon-btn share-btn" data-url="${safeUrl}" data-title="${safeTitle}" title="Share">${shareIcon}</button>
                             </div>
                         </div>
                     `;
