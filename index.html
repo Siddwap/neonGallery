@@ -212,9 +212,15 @@
             white-space: nowrap;
         }
 
-        .play-btn {
-            display: block;
+        /* --- NEW BUTTON GROUP (Play, Copy, Share) --- */
+        .action-row {
+            display: flex;
+            gap: 10px;
             margin: 0.6rem 1rem 1.2rem;
+        }
+
+        .play-btn {
+            flex: 1;
             background: linear-gradient(90deg, #00c8ff, #aa00ff);
             border: none;
             border-radius: 60px;
@@ -226,7 +232,30 @@
             color: #fff;
             text-decoration: none;
             box-shadow: 0 0 15px #00aaff, 0 0 25px #aa00ff55;
-            width: calc(100% - 2rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #00ffff;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+        }
+        .icon-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+            transform: scale(1.05);
         }
 
         /* ---------- PAGINATION ---------- */
@@ -313,12 +342,40 @@
             border: 1px dashed #00ffff88;
         }
 
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: linear-gradient(135deg, #00c8ff, #aa00ff);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
         /* Responsive */
         @media (max-width: 480px) {
             .header h1 { font-size: 1.3rem; }
             .watchlist-btn { font-size: 0.75rem; padding: 0.3rem 0.6rem; }
             .title { font-size: 0.9rem; }
             .page-btn { width: 40px; height: 40px; font-size: 0.9rem; }
+            .action-row { gap: 8px; }
+            .icon-btn { width: 44px; height: 44px; font-size: 1rem; }
+            .play-btn { font-size: 0.9rem; padding: 0.7rem 0; }
         }
     </style>
 </head>
@@ -358,6 +415,9 @@
             </div>
         </div>
     </div>
+    
+    <!-- Toast Message Div -->
+    <div id="toast" class="toast">✅ Link Copied!</div>
 
     <script>
         (function() {
@@ -390,8 +450,70 @@
             const watchlistBtn = document.getElementById('watchlistBtn');
             const searchInput = document.getElementById('searchInput');
             const searchBtn = document.getElementById('searchBtn');
+            const toastEl = document.getElementById('toast');
 
             // ---------- HELPERS ----------
+            
+            // Function to show Toast Notification
+            function showToast(message) {
+                toastEl.innerHTML = message;
+                toastEl.classList.add('show');
+                setTimeout(() => {
+                    toastEl.classList.remove('show');
+                }, 2500);
+            }
+
+            // Function to Copy Text
+            function copyToClipboard(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showToast('✅ Link Copied!');
+                    }).catch(() => {
+                        fallbackCopyTextToClipboard(text);
+                    });
+                } else {
+                    fallbackCopyTextToClipboard(text);
+                }
+            }
+
+            function fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('✅ Link Copied!');
+                } catch (err) {
+                    showToast('❌ Failed to copy');
+                }
+                textArea.remove();
+            }
+
+            // Function to Share Link
+            async function shareLink(title, url) {
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: title,
+                            text: 'Watch this video on Neon Player!',
+                            url: url
+                        });
+                    } catch (err) {
+                        console.log('Share cancelled', err);
+                    }
+                } else {
+                    // Fallback if Web Share API not supported
+                    copyToClipboard(url);
+                    showToast('🔗 Web Share not supported. Link Copied!');
+                }
+            }
+
+            // Smart function to extract ID
             function getPlayerUrl(link) {
                 let id = "";
                 try {
@@ -418,7 +540,7 @@
                 return div.innerHTML;
             }
 
-            // ---------- WATCHLIST LOGIC (LOCALSTORAGE) ----------
+            // ---------- WATCHLIST LOGIC ----------
             function getWatchlist() {
                 try {
                     return JSON.parse(localStorage.getItem('neonWatchlist')) || [];
@@ -430,12 +552,11 @@
                 const index = list.findIndex(v => (v.id === video.id) || (v.link === video.link));
                 
                 if (index > -1) {
-                    // Remove
                     list.splice(index, 1);
                     btnElement.classList.remove('saved');
                     btnElement.textContent = '🤍';
+                    showToast('🗑️ Removed from Watchlist');
                 } else {
-                    // Add (ensure link is saved, whether it comes from 'link' or 'url')
                     const safeVideo = {
                         id: video.id,
                         title: video.title,
@@ -446,6 +567,7 @@
                     list.push(safeVideo);
                     btnElement.classList.add('saved');
                     btnElement.textContent = '🔖';
+                    showToast('⭐ Added to Watchlist');
                 }
                 localStorage.setItem('neonWatchlist', JSON.stringify(list));
             }
@@ -463,14 +585,17 @@
                 videos.forEach(video => {
                     const title = video.title || 'Untitled video';
                     const thumbnail = video.thumbnail || 'https://via.placeholder.com/640x360/1a1f2a/00ffff?text=NO+THUMB';
-                    const link = video.link || video.url; // Handle both API formats
+                    const link = video.link || video.url;
                     const playerUrl = getPlayerUrl(link);
                     const size = video.size || 'Unknown';
                     
-                    // Check if already in watchlist
                     const isSaved = watchlist.some(v => (v.id === video.id) || (v.link === link));
                     const bookmarkClass = isSaved ? 'saved' : '';
                     const bookmarkIcon = isSaved ? '🔖' : '🤍';
+
+                    // Escape title and URL for attributes
+                    const safeTitle = escapeHtml(title).replace(/'/g, "\\'");
+                    const safeUrl = escapeHtml(playerUrl);
 
                     html += `
                         <div class="card">
@@ -482,22 +607,42 @@
                                 <div class="title" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
                                 <div class="size-badge">📦 ${escapeHtml(size)}</div>
                             </div>
-                            <a href="${playerUrl}" target="_blank" rel="noopener noreferrer" class="play-btn">▶ PLAY VIDEO</a>
+                            <div class="action-row">
+                                <a href="${playerUrl}" target="_blank" rel="noopener noreferrer" class="play-btn">▶ PLAY</a>
+                                <button class="icon-btn copy-btn" data-url="${safeUrl}" title="Copy Link">📋</button>
+                                <button class="icon-btn share-btn" data-url="${safeUrl}" data-title="${safeTitle}" title="Share">📤</button>
+                            </div>
                         </div>
                     `;
                 });
 
                 videoContainer.innerHTML = html;
 
-                // Add event listeners to bookmark buttons
+                // Add Event Listeners for Buttons
                 document.querySelectorAll('.bookmark-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
                         const id = this.getAttribute('data-id');
                         const link = this.getAttribute('data-link');
-                        // Find video object
                         const video = videos.find(v => v.id == id || (v.link || v.url) === link);
                         if (video) toggleWatchlist(video, this);
+                    });
+                });
+
+                document.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const url = this.getAttribute('data-url');
+                        copyToClipboard(url);
+                    });
+                });
+
+                document.querySelectorAll('.share-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const url = this.getAttribute('data-url');
+                        const title = this.getAttribute('data-title');
+                        shareLink(title, url);
                     });
                 });
             }
@@ -599,7 +744,6 @@
                     currentPageInfoEl.textContent = json.currentPage || 1;
                     lastPageInfoEl.textContent = totalPages.toLocaleString();
 
-                    // Search API me link ki jagah 'url' hota hai, render function usko handle kar lega
                     renderVideos(json.results);
                     buildPageButtons();
 
@@ -640,13 +784,11 @@
 
             // ---------- EVENT LISTENERS ----------
             
-            // Search Button
             searchBtn.addEventListener('click', () => {
                 const q = searchInput.value.trim();
                 if (q) fetchSearch(q, 1);
             });
 
-            // Search Enter key
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     const q = searchInput.value.trim();
@@ -654,16 +796,13 @@
                 }
             });
 
-            // Home Button (Reset to Normal)
             homeBtn.addEventListener('click', () => {
                 searchInput.value = '';
                 fetchPage(1);
             });
 
-            // Watchlist Button
             watchlistBtn.addEventListener('click', showWatchlist);
 
-            // Goto Page
             gotoBtn.addEventListener('click', () => {
                 const raw = gotoInput.value.trim();
                 if (!raw) return;
@@ -674,7 +813,6 @@
                 }
             });
 
-            // Goto Enter key
             gotoInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') gotoBtn.click();
             });
