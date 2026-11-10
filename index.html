@@ -290,7 +290,7 @@
             let isWatchlistMode = false;
             let isHistoryMode = false;
             let currentSearchQuery = "";
-            let currentVideosData = []; // Current list hold karne ke liye
+            let currentVideosData = [];
 
             // DOM ELEMENTS
             const videoContainer = document.getElementById('videoContainer');
@@ -325,7 +325,7 @@
 
             function showLoadingUI() {
                 videoContainer.innerHTML = `<div class="loading-box"><div class="spinner"></div><span>Loading...</span></div>`;
-                window.scrollTo(0, 0); // Scroll top instantly
+                window.scrollTo(0, 0); 
             }
 
             function escapeHtml(text) {
@@ -377,14 +377,20 @@
             function addToHistory(video) {
                 let history = getHistory();
                 history = history.filter(v => (v.id !== video.id) && (v.link !== (video.link || video.url)));
-                history.unshift({ id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url });
-                if(history.length > 50) history = history.slice(0, 50); // Max 50
+                history.unshift({ 
+                    id: video.id, 
+                    title: video.title, 
+                    thumbnail: video.thumbnail, 
+                    size: video.size, 
+                    link: video.link || video.url 
+                });
+                if(history.length > 50) history = history.slice(0, 50); 
                 localStorage.setItem('neonHistory', JSON.stringify(history));
             }
 
             // CORE RENDERING ENGINE
             function renderVideos(videos) {
-                currentVideosData = videos; // Save for event delegation
+                currentVideosData = videos; 
                 
                 if (!videos || videos.length === 0) {
                     videoContainer.innerHTML = `<div class="loading-box" style="color:#88ddff;border-color:#88ddff44"><span>✨ No videos found here.</span></div>`;
@@ -428,9 +434,9 @@
                 videoContainer.innerHTML = html;
             }
 
-            // EVENT DELEGATION (Yeh sabse solid tarika hai, isme buttons kabhi dead nahi hote)
+            // EVENT DELEGATION (Fixed History Saving)
             videoContainer.addEventListener('click', (e) => {
-                const btn = e.target.closest('button');
+                const btn = e.target.closest('button') || e.target.closest('a.play-btn');
                 if (!btn) return;
 
                 const index = btn.getAttribute('data-index');
@@ -447,15 +453,18 @@
                 } 
                 else if (btn.classList.contains('copy-btn')) {
                     copyToClipboard(playerUrl);
-                    btn.style.color = '#a3ff12'; // Green feedback
+                    btn.style.color = '#a3ff12';
                     setTimeout(() => btn.style.color = '', 500);
                 } 
                 else if (btn.classList.contains('share-btn')) {
                     shareLink(video.title, playerUrl);
                 }
                 else if (btn.classList.contains('play-btn')) {
+                    // 🔥 HISTORY FIX: Link open hone se PEHLE history save karo
                     addToHistory(video);
-                    // Default link behavior will open the URL
+                    
+                    // Agar aap chahte hain ki new tab me khule toh default link behavior allow karein, 
+                    // warna yahan manually window.open(playerUrl, '_blank') likh dein.
                 }
             });
 
