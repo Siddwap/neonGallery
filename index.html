@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>NEON · video gallery</title>
+    <title>Desi Gallery</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,7 +11,7 @@
         body {
             background: #0a0c10;
             font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            padding: 1rem 0.75rem 2rem;
+            padding: 1rem 0.75rem 80px; /* Extra padding bottom for fixed navbar */
             min-height: 100vh;
             color: #e0f0ff;
             display: flex;
@@ -35,43 +35,20 @@
         .app { max-width: 720px; width: 100%; margin: 0 auto; }
 
         .header {
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex; align-items: center; justify-content: center;
             margin-bottom: 1rem; padding: 0 0.25rem; gap: 10px;
         }
 
         .header h1 {
-            font-size: 1.6rem; font-weight: 700; letter-spacing: 2px;
+            font-size: 1.8rem; font-weight: 700; letter-spacing: 2px;
             background: linear-gradient(135deg, #00ffff, #ff00ff);
             -webkit-background-clip: text; background-clip: text;
             color: transparent; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
             filter: drop-shadow(0 0 6px #00ffff88); cursor: pointer;
         }
 
-        .header-actions { display: flex; gap: 8px; }
-
-        .hdr-btn {
-            background: rgba(0, 255, 255, 0.1); border: 1px solid #00ffff;
-            color: #00ffff; padding: 0.4rem 0.6rem; border-radius: 8px;
-            font-size: 0.8rem; font-weight: bold; cursor: pointer;
-            display: flex; align-items: center; gap: 4px;
-            transition: all 0.3s; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
-        }
-        .hdr-btn:hover { background: rgba(0, 255, 255, 0.2); box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); }
-        .hdr-btn.active { background: #00ffff; color: #000; }
-
-        .search-container { display: flex; gap: 10px; margin-bottom: 1rem; }
-        .search-input {
-            flex: 1; background: rgba(12, 18, 26, 0.85);
-            border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 12px;
-            padding: 0.75rem 1rem; color: #fff; font-size: 0.95rem;
-            outline: none; transition: all 0.3s;
-        }
-        .search-input:focus { border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.2); }
-        .search-btn {
-            background: linear-gradient(135deg, #00c8ff, #aa00ff);
-            border: none; border-radius: 12px; padding: 0 1.2rem;
-            color: #fff; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px #aa00ff88;
-        }
+        /* Search container ab bottom bar me shift ho gaya hai */
+        .search-container { display: none; } /* Hide top search */
 
         .info-bar {
             width: 100%; text-align: center; font-size: 0.85rem;
@@ -185,7 +162,7 @@
         }
 
         .toast {
-            position: fixed; bottom: 30px; left: 50%;
+            position: fixed; bottom: 90px; left: 50%;
             transform: translateX(-50%) translateY(100px);
             background: linear-gradient(135deg, #00c8ff, #aa00ff);
             color: white; padding: 12px 24px; border-radius: 30px;
@@ -196,9 +173,96 @@
         }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
+        /* ---------- BOTTOM NAVIGATION BAR ---------- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(10, 12, 16, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0;
+            z-index: 1000;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            color: #8ea8c4;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 80px;
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .nav-item.active {
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        .nav-item.active svg {
+            filter: drop-shadow(0 0 5px #00ffff);
+        }
+
+        /* Search Input inside Bottom Nav (Hidden by default, shown when clicked) */
+        .search-input-wrapper {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            width: 90%;
+            max-width: 500px;
+            background: rgba(12, 18, 26, 0.95);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            display: flex;
+            gap: 10px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            z-index: 1001;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+        .search-input-wrapper.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .search-input {
+            flex: 1; background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 8px;
+            padding: 10px 14px; color: #fff; font-size: 0.95rem;
+            outline: none;
+        }
+        .search-btn {
+            background: linear-gradient(135deg, #00c8ff, #aa00ff);
+            border: none; border-radius: 8px; padding: 0 15px;
+            color: #fff; font-weight: bold; cursor: pointer;
+        }
+
         @media (max-width: 480px) {
-            .header h1 { font-size: 1.3rem; }
-            .hdr-btn { font-size: 0.7rem; padding: 0.3rem 0.5rem; }
+            .header h1 { font-size: 1.5rem; }
             .title { font-size: 0.9rem; }
             .page-btn { width: 40px; height: 40px; font-size: 0.9rem; }
             .action-row { gap: 8px; }
@@ -211,16 +275,7 @@
 <body>
     <div class="app">
         <div class="header">
-            <h1 id="homeBtn">NEON·PIX</h1>
-            <div class="header-actions">
-                <button class="hdr-btn" id="historyBtn"><span>🕒</span> History</button>
-                <button class="hdr-btn" id="watchlistBtn"><span>🔖</span> My List</button>
-            </div>
-        </div>
-
-        <div class="search-container">
-            <input type="text" id="searchInput" class="search-input" placeholder="Search videos...">
-            <button id="searchBtn" class="search-btn">🔍</button>
+            <h1 id="homeBtn">Desi Gallery</h1>
         </div>
 
         <div class="info-bar" id="infoBar">
@@ -243,6 +298,32 @@
     
     <div id="toast" class="toast">✅ Link Copied!</div>
 
+    <!-- HIDDEN SEARCH BAR (Shows up when search icon is clicked) -->
+    <div class="search-input-wrapper" id="searchWrapper">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search videos...">
+        <button id="searchBtn" class="search-btn">🔍</button>
+    </div>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <div class="bottom-nav">
+        <button class="nav-item active" id="navHome">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" id="navSearch">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>Search</span>
+        </button>
+        <button class="nav-item" id="navHistory">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>History</span>
+        </button>
+        <button class="nav-item" id="navWatchlist">
+            <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            <span>My List</span>
+        </button>
+    </div>
+
     <script>
         (function() {
             // ---------- TELEGRAM INIT & BACK BUTTON ----------
@@ -253,7 +334,7 @@
                 tg.ready();
                 tg.expand();
                 tg.BackButton.onClick(() => {
-                    if (isSubMode) document.getElementById('homeBtn').click();
+                    if (isSubMode) document.getElementById('navHome').click();
                     else tg.close();
                 });
             }
@@ -261,7 +342,7 @@
             // ---------- CONFIG ----------
             const API_BASE = "https://teradiskadda.in/api/v1/videos?page=";
             const SEARCH_API = "https://app.teradiskadda.in/api/search?q=";
-            const PER_PAGE = 10;
+            const PER_PAGE = 100; // UPDATED: 100 Videos per page
             const BOT_BASE = "https://t.me/neon_player_bot/app?startapp=";
             const MAX_PAGE_BUTTONS = 5;
 
@@ -282,11 +363,18 @@
             const totalVideosEl = document.getElementById('totalVideos');
             const currentPageInfoEl = document.getElementById('currentPageInfo');
             const lastPageInfoEl = document.getElementById('lastPageInfo');
-            const homeBtn = document.getElementById('homeBtn');
-            const historyBtn = document.getElementById('historyBtn');
-            const watchlistBtn = document.getElementById('watchlistBtn');
+            
+            // Bottom Nav Elements
+            const navHome = document.getElementById('navHome');
+            const navSearch = document.getElementById('navSearch');
+            const navHistory = document.getElementById('navHistory');
+            const navWatchlist = document.getElementById('navWatchlist');
+            
+            // Search Elements
+            const searchWrapper = document.getElementById('searchWrapper');
             const searchInput = document.getElementById('searchInput');
             const searchBtn = document.getElementById('searchBtn');
+            
             const toastEl = document.getElementById('toast');
 
             // ---------- HELPERS ----------
@@ -300,6 +388,11 @@
                 toastEl.innerHTML = message;
                 toastEl.classList.add('show');
                 setTimeout(() => toastEl.classList.remove('show'), 2500);
+            }
+
+            function setActiveNav(activeBtn) {
+                [navHome, navSearch, navHistory, navWatchlist].forEach(btn => btn.classList.remove('active'));
+                if (activeBtn) activeBtn.classList.add('active');
             }
 
             function copyToClipboard(text) {
@@ -321,7 +414,7 @@
             }
 
             async function shareLink(title, url) {
-                const shareData = { title, text: 'Watch this video on Neon Player!', url };
+                const shareData = { title, text: 'Watch this video on Desi Gallery!', url };
                 if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
                     try { await navigator.share(shareData); return; } 
                     catch (err) { if (err.name !== 'AbortError') console.log('Share failed', err); return; }
@@ -365,21 +458,13 @@
                 const index = list.findIndex(v => (v.id === video.id) || (v.link === video.link));
                 
                 if (index > -1) {
-                    // Remove
                     list.splice(index, 1);
                     btnElement.classList.remove('saved');
                     btnElement.textContent = '🤍';
                     showToast('🗑️ Removed from Watchlist');
                 } else {
-                    // Add (LATEST VIDEO ON TOP)
-                    const safeVideo = { 
-                        id: video.id, 
-                        title: video.title, 
-                        thumbnail: video.thumbnail, 
-                        size: video.size, 
-                        link: video.link || video.url 
-                    };
-                    list.unshift(safeVideo); // <--- Yahan unshift use kiya hai
+                    const safeVideo = { id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url };
+                    list.unshift(safeVideo); // Latest top par
                     btnElement.classList.add('saved');
                     btnElement.textContent = '🔖';
                     showToast('⭐ Added to Watchlist');
@@ -390,14 +475,8 @@
             function addToHistory(video) {
                 let history = getHistory();
                 history = history.filter(v => (v.id !== video.id) && (v.link !== (video.link || video.url)));
-                const safeVideo = { 
-                    id: video.id, 
-                    title: video.title, 
-                    thumbnail: video.thumbnail, 
-                    size: video.size, 
-                    link: video.link || video.url 
-                };
-                history.unshift(safeVideo); // Latest top par
+                const safeVideo = { id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url };
+                history.unshift(safeVideo);
                 if(history.length > 50) history = history.slice(0, 50);
                 localStorage.setItem('neonHistory', JSON.stringify(history));
             }
@@ -529,7 +608,8 @@
             async function fetchPage(page) {
                 if (page < 1) return;
                 isSearchMode = false; isWatchlistMode = false; isHistoryMode = false; isSubMode = false;
-                historyBtn.classList.remove('active'); watchlistBtn.classList.remove('active');
+                searchWrapper.classList.remove('show');
+                setActiveNav(navHome);
                 currentPage = page; updateBackButton();
 
                 videoContainer.innerHTML = `<div class="status">⚡ loading page ${page} ...</div>`;
@@ -555,7 +635,7 @@
             async function fetchSearch(query, page = 1) {
                 if (!query) return;
                 isSearchMode = true; isWatchlistMode = false; isHistoryMode = false; isSubMode = true;
-                historyBtn.classList.remove('active'); watchlistBtn.classList.remove('active');
+                setActiveNav(navSearch);
                 currentSearchQuery = query; currentPage = page; updateBackButton();
 
                 videoContainer.innerHTML = `<div class="status">🔍 Searching "${escapeHtml(query)}" ...</div>`;
@@ -580,7 +660,8 @@
 
             function showWatchlist() {
                 isWatchlistMode = true; isSearchMode = false; isHistoryMode = false; isSubMode = true;
-                watchlistBtn.classList.add('active'); historyBtn.classList.remove('active');
+                searchWrapper.classList.remove('show');
+                setActiveNav(navWatchlist);
                 currentPage = 1; updateBackButton();
 
                 const list = getWatchlist();
@@ -594,7 +675,8 @@
 
             function showHistory() {
                 isHistoryMode = true; isWatchlistMode = false; isSearchMode = false; isSubMode = true;
-                historyBtn.classList.add('active'); watchlistBtn.classList.remove('active');
+                searchWrapper.classList.remove('show');
+                setActiveNav(navHistory);
                 currentPage = 1; updateBackButton();
 
                 const list = getHistory();
@@ -613,11 +695,33 @@
             }
 
             // ---------- EVENT LISTENERS ----------
-            searchBtn.addEventListener('click', () => { const q = searchInput.value.trim(); if (q) fetchSearch(q, 1); });
-            searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const q = searchInput.value.trim(); if (q) fetchSearch(q, 1); }});
-            homeBtn.addEventListener('click', () => { searchInput.value = ''; fetchPage(1); });
-            watchlistBtn.addEventListener('click', showWatchlist);
-            historyBtn.addEventListener('click', showHistory);
+            
+            // Bottom Nav Events
+            navHome.addEventListener('click', () => fetchPage(1));
+            navHistory.addEventListener('click', showHistory);
+            navWatchlist.addEventListener('click', showWatchlist);
+            
+            // Search Toggle
+            navSearch.addEventListener('click', () => {
+                searchWrapper.classList.toggle('show');
+                if (searchWrapper.classList.contains('show')) {
+                    searchInput.focus();
+                }
+            });
+
+            // Search Actions
+            const performSearch = () => {
+                const q = searchInput.value.trim();
+                if (q) {
+                    searchWrapper.classList.remove('show'); // Hide input after search
+                    fetchSearch(q, 1);
+                }
+            };
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
+
+            // Title click to Home
+            document.getElementById('homeBtn').addEventListener('click', () => fetchPage(1));
 
             gotoBtn.addEventListener('click', () => {
                 const raw = gotoInput.value.trim();
