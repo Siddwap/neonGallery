@@ -6,12 +6,12 @@
     <title>Desi Gallery</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             background: #0a0c10;
-            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            padding: 1rem 0.75rem 80px;
+            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, sans-serif;
+            padding: 1rem 0.75rem 90px;
             min-height: 100vh;
             color: #e0f0ff;
             display: flex;
@@ -19,7 +19,6 @@
             align-items: center;
             position: relative;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
         }
 
         body::before {
@@ -56,7 +55,7 @@
         }
         .info-bar span { color: #fff; font-weight: 600; }
 
-        .video-grid { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; min-height: 50vh; }
+        .video-grid { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; min-height: 60vh; }
 
         .card {
             background: rgba(12, 18, 26, 0.85); backdrop-filter: blur(8px);
@@ -150,42 +149,50 @@
             color: #fff; font-weight: 800; cursor: pointer; margin-left: 0.3rem;
         }
 
-        .status {
-            text-align: center; padding: 2rem 1rem; font-size: 1.1rem;
-            color: #88ddff; background: #0d141ecc;
-            border-radius: 50px; border: 1px dashed #00ffff88;
+        /* Loading Skeleton */
+        .loading-box {
+            text-align: center; padding: 3rem 1rem; font-size: 1.1rem;
+            color: #00ffff; background: #0d141ecc;
+            border-radius: 20px; border: 1px solid #00ffff44;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+            box-shadow: inset 0 0 20px rgba(0,255,255,0.1);
         }
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid rgba(0,255,255,0.2);
+            border-top-color: #00ffff; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ---------- BOTTOM NAVIGATION BAR ---------- */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(10, 12, 16, 0.95); backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            background: rgba(10, 12, 16, 0.98); backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(0, 255, 255, 0.3);
             display: flex; justify-content: space-around; align-items: center;
             padding: 10px 0; z-index: 1000;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8);
         }
 
         .nav-item {
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
             background: transparent; border: none; color: #8ea8c4;
             font-size: 0.75rem; font-weight: 600; cursor: pointer;
-            width: 80px; outline: none;
+            width: 80px; outline: none; transition: all 0.2s;
         }
-
         .nav-item svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-        .nav-item.active { color: #00ffff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+        .nav-item.active { color: #00ffff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.6); }
         .nav-item.active svg { filter: drop-shadow(0 0 5px #00ffff); }
 
         /* Search Input inside Bottom Nav */
         .search-input-wrapper {
-            position: fixed; bottom: 75px; left: 50%;
+            position: fixed; bottom: 80px; left: 50%;
             transform: translateX(-50%);
             width: 90%; max-width: 500px;
-            background: rgba(12, 18, 26, 0.95); padding: 10px;
-            border-radius: 12px; border: 1px solid rgba(0, 255, 255, 0.4);
+            background: rgba(12, 18, 26, 0.98); padding: 10px;
+            border-radius: 12px; border: 1px solid rgba(0, 255, 255, 0.5);
             display: none; gap: 10px; z-index: 1001;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
         }
         .search-input-wrapper.show { display: flex; }
 
@@ -221,7 +228,7 @@
         </div>
 
         <div id="videoContainer" class="video-grid">
-            <div class="status">⚡ loading videos ...</div>
+            <!-- Content renders here -->
         </div>
 
         <div class="pagination" id="paginationSection">
@@ -261,15 +268,12 @@
     </div>
 
     <script>
-        (function() {
+        document.addEventListener('DOMContentLoaded', () => {
+            // TELEGRAM SETUP
             const tg = window.Telegram?.WebApp;
             if (tg) {
                 tg.ready();
                 tg.expand();
-                tg.BackButton.onClick(() => {
-                    if (isSubMode) document.getElementById('navHome').click();
-                    else tg.close();
-                });
             }
 
             // CONFIG
@@ -285,10 +289,10 @@
             let isSearchMode = false;
             let isWatchlistMode = false;
             let isHistoryMode = false;
-            let isSubMode = false;
             let currentSearchQuery = "";
+            let currentVideosData = []; // Current list hold karne ke liye
 
-            // DOM
+            // DOM ELEMENTS
             const videoContainer = document.getElementById('videoContainer');
             const pageNumbersEl = document.getElementById('pageNumbers');
             const gotoInput = document.getElementById('gotoInput');
@@ -308,31 +312,25 @@
             const searchBtn = document.getElementById('searchBtn');
 
             // HELPERS
-            function updateBackButton() {
-                if (!tg || !tg.BackButton) return;
-                if (isSubMode) tg.BackButton.show();
-                else tg.BackButton.hide();
-            }
-
             function setActiveNav(activeBtn) {
-                [navHome, navSearch, navHistory, navWatchlist].forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
                 if (activeBtn) activeBtn.classList.add('active');
             }
 
-            function copyToClipboard(text) {
-                if (navigator.clipboard) navigator.clipboard.writeText(text);
-                else {
-                    const t = document.createElement("textarea");
-                    t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
-                }
+            function toggleTGButton(show) {
+                if (!tg || !tg.BackButton) return;
+                if (show) tg.BackButton.show();
+                else tg.BackButton.hide();
             }
 
-            async function shareLink(title, url) {
-                if (navigator.share) {
-                    try { await navigator.share({ title, text: 'Watch this video!', url }); } catch (e) {}
-                } else {
-                    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, '_blank');
-                }
+            function showLoadingUI() {
+                videoContainer.innerHTML = `<div class="loading-box"><div class="spinner"></div><span>Loading...</span></div>`;
+                window.scrollTo(0, 0); // Scroll top instantly
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
             }
 
             function getPlayerUrl(link) {
@@ -346,52 +344,59 @@
                 return BOT_BASE + (id || "").split('?')[0].split('&')[0].split('/')[0];
             }
 
-            function escapeHtml(text) {
-                if (!text) return '';
-                return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            function copyToClipboard(text) {
+                if (navigator.clipboard) navigator.clipboard.writeText(text);
+                else {
+                    const t = document.createElement("textarea");
+                    t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+                }
             }
 
-            // WATCHLIST & HISTORY
+            function shareLink(title, url) {
+                if (navigator.share) navigator.share({ title, text: 'Watch this video!', url }).catch(()=>{});
+                else window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, '_blank');
+            }
+
+            // LOCAL STORAGE (HISTORY & WATCHLIST)
             function getWatchlist() { try { return JSON.parse(localStorage.getItem('neonWatchlist')) || []; } catch(e) { return []; } }
             function getHistory() { try { return JSON.parse(localStorage.getItem('neonHistory')) || []; } catch(e) { return []; } }
 
-            function toggleWatchlist(video, btnElement) {
+            function updateWatchlistInStorage(video) {
                 let list = getWatchlist();
                 const index = list.findIndex(v => (v.id === video.id) || (v.link === video.link));
-                
                 if (index > -1) {
                     list.splice(index, 1);
-                    btnElement.classList.remove('saved');
-                    btnElement.textContent = '🤍';
+                    return false; // Removed
                 } else {
-                    list.unshift({ id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url });
-                    btnElement.classList.add('saved');
-                    btnElement.textContent = '🔖';
+                    list.unshift(video);
+                    localStorage.setItem('neonWatchlist', JSON.stringify(list));
+                    return true; // Added
                 }
-                localStorage.setItem('neonWatchlist', JSON.stringify(list));
             }
 
             function addToHistory(video) {
                 let history = getHistory();
                 history = history.filter(v => (v.id !== video.id) && (v.link !== (video.link || video.url)));
                 history.unshift({ id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url });
-                if(history.length > 50) history = history.slice(0, 50);
+                if(history.length > 50) history = history.slice(0, 50); // Max 50
                 localStorage.setItem('neonHistory', JSON.stringify(history));
             }
 
-            // RENDER
+            // CORE RENDERING ENGINE
             function renderVideos(videos) {
+                currentVideosData = videos; // Save for event delegation
+                
                 if (!videos || videos.length === 0) {
-                    videoContainer.innerHTML = `<div class="status">✨ No videos found here.</div>`;
+                    videoContainer.innerHTML = `<div class="loading-box" style="color:#88ddff;border-color:#88ddff44"><span>✨ No videos found here.</span></div>`;
                     return;
                 }
 
                 const watchlist = getWatchlist();
                 let html = '';
-                const copyIcon = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-                const shareIcon = `<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+                const svgCopy = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+                const svgShare = `<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
 
-                videos.forEach(video => {
+                videos.forEach((video, index) => {
                     const title = escapeHtml(video.title || 'Untitled video');
                     const thumbnail = video.thumbnail || '';
                     const link = video.link || video.url;
@@ -406,44 +411,55 @@
                         <div class="card">
                             <div class="thumb-wrapper">
                                 <img src="${thumbnail}" alt="thumb" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22640%22 height=%22360%22%3E%3Crect width=%22640%22 height=%22360%22 fill=%22%23111822%22/%3E%3C/svg%3E'">
-                                <button class="bookmark-btn ${bClass}" data-id="${video.id}" data-link="${link}">${bIcon}</button>
+                                <button class="bookmark-btn ${bClass}" data-index="${index}">${bIcon}</button>
                             </div>
                             <div class="title-row">
                                 <div class="title">${title}</div>
                                 <div class="size-badge">📦 ${size}</div>
                             </div>
                             <div class="action-row">
-                                <a href="${playerUrl}" target="_blank" class="play-btn" data-id="${video.id}">▶ PLAY</a>
-                                <button class="icon-btn copy-btn" data-url="${playerUrl}">${copyIcon}</button>
-                                <button class="icon-btn share-btn" data-url="${playerUrl}" data-title="${title}">${shareIcon}</button>
+                                <a href="${playerUrl}" target="_blank" class="play-btn" data-index="${index}">▶ PLAY</a>
+                                <button class="icon-btn copy-btn" data-index="${index}">${svgCopy}</button>
+                                <button class="icon-btn share-btn" data-index="${index}">${svgShare}</button>
                             </div>
                         </div>
                     `;
                 });
                 videoContainer.innerHTML = html;
-
-                // Event Listeners
-                videoContainer.querySelectorAll('.bookmark-btn').forEach(btn => {
-                    btn.onclick = function() {
-                        const id = this.dataset.id, link = this.dataset.link;
-                        const v = videos.find(x => x.id == id || (x.link || x.url) === link);
-                        if (v) toggleWatchlist(v, this);
-                    };
-                });
-                videoContainer.querySelectorAll('.play-btn').forEach(btn => {
-                    btn.onclick = function() {
-                        const v = videos.find(x => x.id == this.dataset.id);
-                        if (v) addToHistory(v);
-                    };
-                });
-                videoContainer.querySelectorAll('.copy-btn').forEach(btn => {
-                    btn.onclick = function() { copyToClipboard(this.dataset.url); };
-                });
-                videoContainer.querySelectorAll('.share-btn').forEach(btn => {
-                    btn.onclick = function() { shareLink(this.dataset.title, this.dataset.url); };
-                });
             }
 
+            // EVENT DELEGATION (Yeh sabse solid tarika hai, isme buttons kabhi dead nahi hote)
+            videoContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                const index = btn.getAttribute('data-index');
+                const video = currentVideosData[index];
+                if (!video) return;
+
+                const link = video.link || video.url;
+                const playerUrl = getPlayerUrl(link);
+
+                if (btn.classList.contains('bookmark-btn')) {
+                    const isAdded = updateWatchlistInStorage({ id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: link });
+                    btn.classList.toggle('saved');
+                    btn.textContent = isAdded ? '🔖' : '🤍';
+                } 
+                else if (btn.classList.contains('copy-btn')) {
+                    copyToClipboard(playerUrl);
+                    btn.style.color = '#a3ff12'; // Green feedback
+                    setTimeout(() => btn.style.color = '', 500);
+                } 
+                else if (btn.classList.contains('share-btn')) {
+                    shareLink(video.title, playerUrl);
+                }
+                else if (btn.classList.contains('play-btn')) {
+                    addToHistory(video);
+                    // Default link behavior will open the URL
+                }
+            });
+
+            // PAGINATION BUILDER
             function buildPageButtons() {
                 if (isWatchlistMode || isHistoryMode) {
                     paginationSection.style.display = 'none';
@@ -474,121 +490,115 @@
                 pageNumbersEl.appendChild(createBtn('&#9654;', currentPage + 1, false, currentPage >= totalPages));
             }
 
-            // FETCHING & ROUTING
-            async function fetchPage(page) {
+            // ROUTING & FETCHING
+            function fetchPage(page) {
                 if (page < 1) return;
-                isSearchMode = false; isWatchlistMode = false; isHistoryMode = false; isSubMode = false;
+                isSearchMode = false; isWatchlistMode = false; isHistoryMode = false;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navHome);
-                updateBackButton();
+                toggleTGButton(false);
                 currentPage = page;
 
-                // INSTANT UI RESPONSE
-                videoContainer.innerHTML = `<div class="status">⚡ loading page ${page} ...</div>`;
-                pageNumbersEl.innerHTML = ''; 
+                showLoadingUI();
                 paginationSection.style.display = 'flex';
+                pageNumbersEl.innerHTML = '';
 
-                try {
-                    const res = await fetch(`${API_BASE}${page}&per_page=${PER_PAGE}`);
-                    const json = await res.json();
-                    if (!json.data) throw new Error('Invalid format');
+                fetch(`${API_BASE}${page}&per_page=${PER_PAGE}`)
+                    .then(res => res.json())
+                    .then(json => {
+                        if (!json.data) throw new Error('Invalid format');
+                        totalPages = json.last_page || 1;
+                        totalVideosEl.textContent = json.total ? json.total.toLocaleString() : 0;
+                        currentPageInfoEl.textContent = page;
+                        lastPageInfoEl.textContent = totalPages.toLocaleString();
 
-                    totalPages = json.last_page || 1;
-                    totalVideosEl.textContent = json.total ? json.total.toLocaleString() : 0;
-                    currentPageInfoEl.textContent = page;
-                    lastPageInfoEl.textContent = totalPages.toLocaleString();
-
-                    renderVideos(json.data);
-                    buildPageButtons();
-                } catch (e) {
-                    videoContainer.innerHTML = `<div class="status error">❌ Failed to load videos.</div>`;
-                }
+                        renderVideos(json.data);
+                        buildPageButtons();
+                    })
+                    .catch(err => {
+                        videoContainer.innerHTML = `<div class="loading-box" style="color:#ff6b9d;border-color:#ff6b9d44"><span>❌ Failed to load videos.</span></div>`;
+                    });
             }
 
-            async function fetchSearch(query, page = 1) {
+            function fetchSearch(query, page = 1) {
                 if (!query) return;
-                isSearchMode = true; isWatchlistMode = false; isHistoryMode = false; isSubMode = true;
+                isSearchMode = true; isWatchlistMode = false; isHistoryMode = false;
                 setActiveNav(navSearch);
-                updateBackButton();
+                toggleTGButton(true);
                 currentSearchQuery = query; currentPage = page;
 
-                videoContainer.innerHTML = `<div class="status">🔍 Searching "${escapeHtml(query)}" ...</div>`;
-                pageNumbersEl.innerHTML = '';
+                showLoadingUI();
                 paginationSection.style.display = 'flex';
+                pageNumbersEl.innerHTML = '';
 
-                try {
-                    const res = await fetch(`${SEARCH_API}${encodeURIComponent(query)}&page=${page}&limit=${PER_PAGE}`);
-                    const json = await res.json();
-                    if (!json.ok) throw new Error('Invalid search format');
+                fetch(`${SEARCH_API}${encodeURIComponent(query)}&page=${page}&limit=${PER_PAGE}`)
+                    .then(res => res.json())
+                    .then(json => {
+                        if (!json.ok) throw new Error('Invalid search format');
+                        totalPages = json.lastPage || 1;
+                        totalVideosEl.textContent = json.total ? json.total.toLocaleString() : 0;
+                        currentPageInfoEl.textContent = json.currentPage || 1;
+                        lastPageInfoEl.textContent = totalPages.toLocaleString();
 
-                    totalPages = json.lastPage || 1;
-                    totalVideosEl.textContent = json.total ? json.total.toLocaleString() : 0;
-                    currentPageInfoEl.textContent = json.currentPage || 1;
-                    lastPageInfoEl.textContent = totalPages.toLocaleString();
-
-                    renderVideos(json.results);
-                    buildPageButtons();
-                } catch (e) {
-                    videoContainer.innerHTML = `<div class="status error">❌ Search failed.</div>`;
-                }
+                        renderVideos(json.results);
+                        buildPageButtons();
+                    })
+                    .catch(err => {
+                        videoContainer.innerHTML = `<div class="loading-box" style="color:#ff6b9d;border-color:#ff6b9d44"><span>❌ Search failed.</span></div>`;
+                    });
             }
 
             function showWatchlist() {
-                if (isWatchlistMode) return; // Prevent double click lag
-                isWatchlistMode = true; isSearchMode = false; isHistoryMode = false; isSubMode = true;
+                if (isWatchlistMode) { window.scrollTo(0,0); return; }
+                isWatchlistMode = true; isSearchMode = false; isHistoryMode = false;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navWatchlist);
-                updateBackButton();
+                toggleTGButton(true);
                 currentPage = 1;
 
-                // Local fetch = instant
                 const list = getWatchlist();
                 totalVideosEl.textContent = list.length;
                 currentPageInfoEl.textContent = "1"; lastPageInfoEl.textContent = "1";
-
-                if (list.length === 0) videoContainer.innerHTML = `<div class="status">📭 Your watch list is empty.</div>`;
-                else renderVideos(list);
+                
+                renderVideos(list);
                 buildPageButtons();
+                window.scrollTo(0,0);
             }
 
             function showHistory() {
-                if (isHistoryMode) return; // Prevent double click lag
-                isHistoryMode = true; isWatchlistMode = false; isSearchMode = false; isSubMode = true;
+                if (isHistoryMode) { window.scrollTo(0,0); return; }
+                isHistoryMode = true; isWatchlistMode = false; isSearchMode = false;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navHistory);
-                updateBackButton();
+                toggleTGButton(true);
                 currentPage = 1;
 
-                // Local fetch = instant
                 const list = getHistory();
                 totalVideosEl.textContent = list.length;
                 currentPageInfoEl.textContent = "1"; lastPageInfoEl.textContent = "1";
 
-                if (list.length === 0) videoContainer.innerHTML = `<div class="status">🕒 You haven't watched any videos yet.</div>`;
-                else renderVideos(list);
+                renderVideos(list);
                 buildPageButtons();
+                window.scrollTo(0,0);
             }
 
             function goToPage(page) {
-                if (isWatchlistMode || isHistoryMode) return; 
+                if (isWatchlistMode || isHistoryMode) return;
                 if (isSearchMode) fetchSearch(currentSearchQuery, page);
                 else fetchPage(page);
             }
 
-            // EVENTS
-            navHome.onclick = () => fetchPage(1);
-            navHistory.onclick = showHistory;
-            navWatchlist.onclick = showWatchlist;
+            // EVENT LISTENERS FOR UI
+            navHome.addEventListener('click', () => fetchPage(1));
+            navHistory.addEventListener('click', showHistory);
+            navWatchlist.addEventListener('click', showWatchlist);
             
-            navSearch.onclick = () => {
-                const isShowing = searchWrapper.classList.contains('show');
-                if (!isShowing) {
-                    searchWrapper.classList.add('show');
+            navSearch.addEventListener('click', () => {
+                searchWrapper.classList.toggle('show');
+                if (searchWrapper.classList.contains('show')) {
                     setTimeout(() => searchInput.focus(), 50);
-                } else {
-                    searchWrapper.classList.remove('show');
                 }
-            };
+            });
 
             const doSearch = () => {
                 const q = searchInput.value.trim();
@@ -597,20 +607,20 @@
                     fetchSearch(q, 1);
                 }
             };
-            searchBtn.onclick = doSearch;
-            searchInput.onkeydown = (e) => { if (e.key === 'Enter') doSearch(); };
+            searchBtn.addEventListener('click', doSearch);
+            searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
 
-            document.getElementById('homeBtn').onclick = () => fetchPage(1);
+            document.getElementById('homeBtn').addEventListener('click', () => fetchPage(1));
 
-            gotoBtn.onclick = () => {
+            gotoBtn.addEventListener('click', () => {
                 const p = parseInt(gotoInput.value.trim(), 10);
                 if (p >= 1 && p <= totalPages) { gotoInput.value = ''; goToPage(p); }
-            };
-            gotoInput.onkeydown = (e) => { if (e.key === 'Enter') gotoBtn.click(); };
+            });
+            gotoInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') gotoBtn.click(); });
 
             // INIT
             fetchPage(1);
-        })();
+        });
     </script>
 </body>
 </html>
