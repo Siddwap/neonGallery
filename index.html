@@ -35,8 +35,8 @@
         .app { max-width: 720px; width: 100%; margin: 0 auto; }
 
         .header {
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 1rem; padding: 0.5rem 0;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1rem; padding: 0.5rem 0.5rem;
         }
 
         .header h1 {
@@ -48,6 +48,17 @@
             filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.4));
             cursor: pointer;
         }
+
+        /* Refresh Button */
+        .refresh-btn {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            color: #00ffff; width: 40px; height: 40px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .refresh-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .refresh-btn.spin svg { animation: spin 1s linear infinite; }
 
         .info-bar {
             width: 100%; text-align: center; font-size: 0.85rem;
@@ -221,6 +232,9 @@
     <div class="app">
         <div class="header">
             <h1 id="homeBtn">Desi Gallery</h1>
+            <button class="refresh-btn" id="refreshBtn" title="Refresh">
+                <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            </button>
         </div>
 
         <div class="info-bar" id="infoBar">
@@ -291,6 +305,14 @@
             let isHistoryMode = false;
             let currentSearchQuery = "";
             let currentVideosData = [];
+            
+            // CACHE STATE (Home Page Data)
+            let homeCache = {
+                page: 0,
+                totalPages: 1,
+                totalVideos: 0,
+                data: null
+            };
 
             // DOM ELEMENTS
             const videoContainer = document.getElementById('videoContainer');
@@ -301,6 +323,7 @@
             const totalVideosEl = document.getElementById('totalVideos');
             const currentPageInfoEl = document.getElementById('currentPageInfo');
             const lastPageInfoEl = document.getElementById('lastPageInfo');
+            const refreshBtn = document.getElementById('refreshBtn');
             
             const navHome = document.getElementById('navHome');
             const navSearch = document.getElementById('navSearch');
@@ -366,11 +389,11 @@
                 const index = list.findIndex(v => (v.id === video.id) || (v.link === video.link));
                 if (index > -1) {
                     list.splice(index, 1);
-                    return false; // Removed
+                    return false; 
                 } else {
                     list.unshift(video);
                     localStorage.setItem('neonWatchlist', JSON.stringify(list));
-                    return true; // Added
+                    return true; 
                 }
             }
 
@@ -378,11 +401,7 @@
                 let history = getHistory();
                 history = history.filter(v => (v.id !== video.id) && (v.link !== (video.link || video.url)));
                 history.unshift({ 
-                    id: video.id, 
-                    title: video.title, 
-                    thumbnail: video.thumbnail, 
-                    size: video.size, 
-                    link: video.link || video.url 
+                    id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url 
                 });
                 if(history.length > 50) history = history.slice(0, 50); 
                 localStorage.setItem('neonHistory', JSON.stringify(history));
@@ -434,7 +453,7 @@
                 videoContainer.innerHTML = html;
             }
 
-            // EVENT DELEGATION (Fixed History Saving)
+            // EVENT DELEGATION
             videoContainer.addEventListener('click', (e) => {
                 const btn = e.target.closest('button') || e.target.closest('a.play-btn');
                 if (!btn) return;
@@ -460,11 +479,7 @@
                     shareLink(video.title, playerUrl);
                 }
                 else if (btn.classList.contains('play-btn')) {
-                    // 🔥 HISTORY FIX: Link open hone se PEHLE history save karo
                     addToHistory(video);
-                    
-                    // Agar aap chahte hain ki new tab me khule toh default link behavior allow karein, 
-                    // warna yahan manually window.open(playerUrl, '_blank') likh dein.
                 }
             });
 
@@ -499,9 +514,34 @@
                 pageNumbersEl.appendChild(createBtn('&#9654;', currentPage + 1, false, currentPage >= totalPages));
             }
 
-            // ROUTING & FETCHING
-            function fetchPage(page) {
+            // ==========================================
+            // ROUTING & FETCHING WITH SMART CACHE
+            // ==========================================
+            
+            function fetchPage(page, forceRefresh = false) {
                 if (page < 1) return;
+                
+                // CACHE CHECK: Agar same page hai aur force refresh nahi hai, toh API mat maaro
+                if (!forceRefresh && homeCache.page === page && homeCache.data) {
+                    isSearchMode = false; isWatchlistMode = false; isHistoryMode = false;
+                    searchWrapper.classList.remove('show');
+                    setActiveNav(navHome);
+                    toggleTGButton(false);
+                    currentPage = page;
+                    
+                    totalPages = homeCache.totalPages;
+                    totalVideosEl.textContent = homeCache.totalVideos;
+                    currentPageInfoEl.textContent = page;
+                    lastPageInfoEl.textContent = totalPages.toLocaleString();
+                    paginationSection.style.display = 'flex';
+
+                    renderVideos(homeCache.data);
+                    buildPageButtons();
+                    window.scrollTo(0, 0);
+                    return; // API Call rok di gayi
+                }
+
+                // Agar naya page hai ya force refresh hai, toh API call karo
                 isSearchMode = false; isWatchlistMode = false; isHistoryMode = false;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navHome);
@@ -516,16 +556,30 @@
                     .then(res => res.json())
                     .then(json => {
                         if (!json.data) throw new Error('Invalid format');
+                        
                         totalPages = json.last_page || 1;
-                        totalVideosEl.textContent = json.total ? json.total.toLocaleString() : 0;
+                        const totalVidStr = json.total ? json.total.toLocaleString() : 0;
+                        
+                        totalVideosEl.textContent = totalVidStr;
                         currentPageInfoEl.textContent = page;
                         lastPageInfoEl.textContent = totalPages.toLocaleString();
+
+                        // CACHE UPDATE
+                        homeCache = {
+                            page: page,
+                            totalPages: totalPages,
+                            totalVideos: totalVidStr,
+                            data: json.data
+                        };
 
                         renderVideos(json.data);
                         buildPageButtons();
                     })
                     .catch(err => {
                         videoContainer.innerHTML = `<div class="loading-box" style="color:#ff6b9d;border-color:#ff6b9d44"><span>❌ Failed to load videos.</span></div>`;
+                    })
+                    .finally(() => {
+                        refreshBtn.classList.remove('spin');
                     });
             }
 
@@ -598,9 +652,26 @@
             }
 
             // EVENT LISTENERS FOR UI
-            navHome.addEventListener('click', () => fetchPage(1));
+            navHome.addEventListener('click', () => fetchPage(1)); // Click on Home tab won't refresh if cached
             navHistory.addEventListener('click', showHistory);
             navWatchlist.addEventListener('click', showWatchlist);
+            
+            // REFRESH BUTTON (Manual Pull to Refresh)
+            refreshBtn.addEventListener('click', () => {
+                refreshBtn.classList.add('spin'); // Spin animation
+                if (isWatchlistMode) {
+                    showWatchlist();
+                    setTimeout(() => refreshBtn.classList.remove('spin'), 500);
+                } else if (isHistoryMode) {
+                    showHistory();
+                    setTimeout(() => refreshBtn.classList.remove('spin'), 500);
+                } else if (isSearchMode) {
+                    fetchSearch(currentSearchQuery, 1);
+                } else {
+                    homeCache.page = 0; // Cache clear karo
+                    fetchPage(currentPage, true); // Force fetch
+                }
+            });
             
             navSearch.addEventListener('click', () => {
                 searchWrapper.classList.toggle('show');
