@@ -19,6 +19,7 @@
             align-items: center;
             position: relative;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body::before {
@@ -34,29 +35,19 @@
 
         .app { max-width: 720px; width: 100%; margin: 0 auto; }
 
-        /* --- STYLISH HEADER --- */
         .header {
             display: flex; align-items: center; justify-content: center;
-            margin-bottom: 1.5rem; padding: 0.5rem 0;
+            margin-bottom: 1rem; padding: 0.5rem 0;
         }
 
         .header h1 {
-            font-size: 1.9rem;
-            font-weight: 800;
-            letter-spacing: 3px;
+            font-size: 1.8rem; font-weight: 800; letter-spacing: 2px;
             text-transform: uppercase;
-            background: linear-gradient(90deg, #00ffff, #aa00ff, #ff00ff, #00ffff);
-            background-size: 300% auto;
-            -webkit-background-clip: text;
-            background-clip: text;
+            background: linear-gradient(90deg, #00ffff, #aa00ff, #ff00ff);
+            -webkit-background-clip: text; background-clip: text;
             color: transparent;
-            animation: shine 4s linear infinite;
             filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.4));
             cursor: pointer;
-        }
-        
-        @keyframes shine {
-            to { background-position: 300% center; }
         }
 
         .info-bar {
@@ -65,7 +56,7 @@
         }
         .info-bar span { color: #fff; font-weight: 600; }
 
-        .video-grid { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; }
+        .video-grid { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; min-height: 50vh; }
 
         .card {
             background: rgba(12, 18, 26, 0.85); backdrop-filter: blur(8px);
@@ -90,7 +81,6 @@
             cursor: pointer; font-size: 1.2rem; color: #888;
             transition: all 0.3s; z-index: 5; backdrop-filter: blur(5px);
         }
-        .bookmark-btn:hover { transform: scale(1.1); border-color: #00ffff; color: #00ffff; }
         .bookmark-btn.saved { color: #00ffff; border-color: #00ffff; box-shadow: 0 0 15px #00ffff88; }
 
         .title-row {
@@ -117,7 +107,7 @@
             border: none; border-radius: 60px; padding: 0.8rem 0;
             text-align: center; font-weight: 700; font-size: 1rem;
             letter-spacing: 1.5px; color: #fff; text-decoration: none;
-            box-shadow: 0 0 15px #00aaff, 0 0 25px #aa00ff55;
+            box-shadow: 0 0 15px #00aaff;
             display: flex; align-items: center; justify-content: center;
         }
 
@@ -126,9 +116,7 @@
             background: rgba(0, 255, 255, 0.1); border: 1px solid rgba(0, 255, 255, 0.4);
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; color: #00ffff; transition: all 0.3s;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
         }
-        .icon-btn:hover { background: rgba(0, 255, 255, 0.2); box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); transform: scale(1.05); }
         .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
         .pagination { display: flex; flex-direction: column; align-items: center; gap: 1.2rem; margin-top: 1.5rem; }
@@ -140,11 +128,9 @@
             cursor: pointer; width: 45px; height: 45px;
             display: flex; align-items: center; justify-content: center;
         }
-
         .page-btn.active {
             background: linear-gradient(135deg, #00c8ff, #aa00ff);
-            border: 1px solid #fff; color: #fff;
-            box-shadow: 0 0 20px #00c8ff; transform: scale(1.1);
+            border: 1px solid #fff; color: #fff; box-shadow: 0 0 20px #00c8ff; transform: scale(1.1);
         }
         .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
@@ -170,99 +156,43 @@
             border-radius: 50px; border: 1px dashed #00ffff88;
         }
 
-        .toast {
-            position: fixed; bottom: 90px; left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: linear-gradient(135deg, #00c8ff, #aa00ff);
-            color: white; padding: 12px 24px; border-radius: 30px;
-            font-weight: 600; font-size: 0.9rem;
-            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
-            opacity: 0; transition: all 0.3s ease;
-            z-index: 9999; display: flex; align-items: center; gap: 8px;
-        }
-        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
         /* ---------- BOTTOM NAVIGATION BAR ---------- */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(10, 12, 16, 0.95);
-            backdrop-filter: blur(10px);
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(10, 12, 16, 0.95); backdrop-filter: blur(10px);
             border-top: 1px solid rgba(0, 255, 255, 0.2);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 10px 0;
-            z-index: 1000;
-            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 10px 0; z-index: 1000;
         }
 
         .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            background: transparent;
-            border: none;
-            color: #8ea8c4;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 80px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            background: transparent; border: none; color: #8ea8c4;
+            font-size: 0.75rem; font-weight: 600; cursor: pointer;
+            width: 80px; outline: none;
         }
 
-        .nav-item svg {
-            width: 24px;
-            height: 24px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
+        .nav-item svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-        .nav-item.active {
-            color: #00ffff;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-        }
-        .nav-item.active svg {
-            filter: drop-shadow(0 0 5px #00ffff);
-        }
+        .nav-item.active { color: #00ffff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+        .nav-item.active svg { filter: drop-shadow(0 0 5px #00ffff); }
 
         /* Search Input inside Bottom Nav */
         .search-input-wrapper {
-            position: fixed;
-            bottom: 70px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            width: 90%;
-            max-width: 500px;
-            background: rgba(12, 18, 26, 0.95);
-            padding: 10px;
-            border-radius: 12px;
-            border: 1px solid rgba(0, 255, 255, 0.4);
-            display: flex;
-            gap: 10px;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.3s;
-            z-index: 1001;
+            position: fixed; bottom: 75px; left: 50%;
+            transform: translateX(-50%);
+            width: 90%; max-width: 500px;
+            background: rgba(12, 18, 26, 0.95); padding: 10px;
+            border-radius: 12px; border: 1px solid rgba(0, 255, 255, 0.4);
+            display: none; gap: 10px; z-index: 1001;
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
         }
-        .search-input-wrapper.show {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateX(-50%) translateY(0);
-        }
+        .search-input-wrapper.show { display: flex; }
 
         .search-input {
             flex: 1; background: rgba(0,0,0,0.5);
             border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 8px;
-            padding: 10px 14px; color: #fff; font-size: 0.95rem;
-            outline: none;
+            padding: 10px 14px; color: #fff; font-size: 0.95rem; outline: none;
         }
         .search-btn {
             background: linear-gradient(135deg, #00c8ff, #aa00ff);
@@ -271,12 +201,11 @@
         }
 
         @media (max-width: 480px) {
-            .header h1 { font-size: 1.6rem; }
+            .header h1 { font-size: 1.5rem; }
             .title { font-size: 0.9rem; }
             .page-btn { width: 40px; height: 40px; font-size: 0.9rem; }
             .action-row { gap: 8px; }
             .icon-btn { width: 44px; height: 44px; }
-            .icon-btn svg { width: 18px; height: 18px; }
             .play-btn { font-size: 0.9rem; padding: 0.7rem 0; }
         }
     </style>
@@ -305,8 +234,6 @@
         </div>
     </div>
     
-    <div id="toast" class="toast">✅ Link Copied!</div>
-
     <!-- SEARCH BAR -->
     <div class="search-input-wrapper" id="searchWrapper">
         <input type="text" id="searchInput" class="search-input" placeholder="Search videos...">
@@ -335,10 +262,7 @@
 
     <script>
         (function() {
-            // ---------- TELEGRAM INIT & BACK BUTTON ----------
             const tg = window.Telegram?.WebApp;
-            let isSubMode = false;
-
             if (tg) {
                 tg.ready();
                 tg.expand();
@@ -348,22 +272,23 @@
                 });
             }
 
-            // ---------- CONFIG ----------
+            // CONFIG
             const API_BASE = "https://teradiskadda.in/api/v1/videos?page=";
             const SEARCH_API = "https://app.teradiskadda.in/api/search?q=";
             const PER_PAGE = 100;
             const BOT_BASE = "https://t.me/neon_player_bot/app?startapp=";
             const MAX_PAGE_BUTTONS = 5;
 
-            // ---------- STATE ----------
+            // STATE
             let currentPage = 1;
             let totalPages = 1;
             let isSearchMode = false;
             let isWatchlistMode = false;
             let isHistoryMode = false;
+            let isSubMode = false;
             let currentSearchQuery = "";
 
-            // DOM Elements
+            // DOM
             const videoContainer = document.getElementById('videoContainer');
             const pageNumbersEl = document.getElementById('pageNumbers');
             const gotoInput = document.getElementById('gotoInput');
@@ -373,30 +298,20 @@
             const currentPageInfoEl = document.getElementById('currentPageInfo');
             const lastPageInfoEl = document.getElementById('lastPageInfo');
             
-            // Nav Elements
             const navHome = document.getElementById('navHome');
             const navSearch = document.getElementById('navSearch');
             const navHistory = document.getElementById('navHistory');
             const navWatchlist = document.getElementById('navWatchlist');
             
-            // Search Elements
             const searchWrapper = document.getElementById('searchWrapper');
             const searchInput = document.getElementById('searchInput');
             const searchBtn = document.getElementById('searchBtn');
-            
-            const toastEl = document.getElementById('toast');
 
-            // ---------- HELPERS ----------
+            // HELPERS
             function updateBackButton() {
                 if (!tg || !tg.BackButton) return;
                 if (isSubMode) tg.BackButton.show();
                 else tg.BackButton.hide();
-            }
-
-            function showToast(message) {
-                toastEl.innerHTML = message;
-                toastEl.classList.add('show');
-                setTimeout(() => toastEl.classList.remove('show'), 2500);
             }
 
             function setActiveNav(activeBtn) {
@@ -405,60 +320,38 @@
             }
 
             function copyToClipboard(text) {
-                if (navigator.clipboard && window.isSecureContext) {
-                    navigator.clipboard.writeText(text).then(() => showToast('✅ Link Copied!')).catch(() => fallbackCopy(text));
-                } else {
-                    fallbackCopy(text);
+                if (navigator.clipboard) navigator.clipboard.writeText(text);
+                else {
+                    const t = document.createElement("textarea");
+                    t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
                 }
-            }
-
-            function fallbackCopy(text) {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed"; textArea.style.left = "-999999px";
-                document.body.appendChild(textArea); textArea.focus(); textArea.select();
-                try { document.execCommand('copy'); showToast('✅ Link Copied!'); } 
-                catch (err) { showToast('❌ Failed to copy'); }
-                textArea.remove();
             }
 
             async function shareLink(title, url) {
-                const shareData = { title, text: 'Watch this video on Desi Gallery!', url };
-                if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-                    try { await navigator.share(shareData); return; } 
-                    catch (err) { if (err.name !== 'AbortError') console.log('Share failed', err); return; }
+                if (navigator.share) {
+                    try { await navigator.share({ title, text: 'Watch this video!', url }); } catch (e) {}
+                } else {
+                    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, '_blank');
                 }
-                const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
-                window.open(tgShareUrl, '_blank');
             }
 
             function getPlayerUrl(link) {
                 let id = "";
                 try {
-                    if (link.includes('surl=')) {
-                        const urlParams = new URLSearchParams(link.split('?')[1]);
-                        id = urlParams.get('surl') || "";
-                    } 
-                    if (!id) {
-                        const urlObj = new URL(link);
-                        const pathParts = urlObj.pathname.split('/').filter(Boolean);
-                        id = pathParts[pathParts.length - 1] || "";
-                    }
+                    if (link.includes('surl=')) id = new URLSearchParams(link.split('?')[1]).get('surl');
+                    if (!id) id = new URL(link).pathname.split('/').filter(Boolean).pop();
                 } catch (e) {
-                    if (link.includes('surl=')) id = link.split('surl=')[1].split('&')[0];
-                    else id = link.split('/').pop().split('?')[0];
+                    id = link.split('surl=')[1] ? link.split('surl=')[1].split('&')[0] : link.split('/').pop().split('?')[0];
                 }
-                return BOT_BASE + id.split('?')[0].split('&')[0].split('/')[0];
+                return BOT_BASE + (id || "").split('?')[0].split('&')[0].split('/')[0];
             }
 
             function escapeHtml(text) {
                 if (!text) return '';
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
+                return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
             }
 
-            // ---------- WATCHLIST & HISTORY LOGIC ----------
+            // WATCHLIST & HISTORY
             function getWatchlist() { try { return JSON.parse(localStorage.getItem('neonWatchlist')) || []; } catch(e) { return []; } }
             function getHistory() { try { return JSON.parse(localStorage.getItem('neonHistory')) || []; } catch(e) { return []; } }
 
@@ -470,13 +363,10 @@
                     list.splice(index, 1);
                     btnElement.classList.remove('saved');
                     btnElement.textContent = '🤍';
-                    showToast('🗑️ Removed from Watchlist');
                 } else {
-                    const safeVideo = { id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url };
-                    list.unshift(safeVideo); // Latest top par
+                    list.unshift({ id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url });
                     btnElement.classList.add('saved');
                     btnElement.textContent = '🔖';
-                    showToast('⭐ Added to Watchlist');
                 }
                 localStorage.setItem('neonWatchlist', JSON.stringify(list));
             }
@@ -484,13 +374,12 @@
             function addToHistory(video) {
                 let history = getHistory();
                 history = history.filter(v => (v.id !== video.id) && (v.link !== (video.link || video.url)));
-                const safeVideo = { id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url };
-                history.unshift(safeVideo);
+                history.unshift({ id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url });
                 if(history.length > 50) history = history.slice(0, 50);
                 localStorage.setItem('neonHistory', JSON.stringify(history));
             }
 
-            // ---------- RENDER VIDEOS ----------
+            // RENDER
             function renderVideos(videos) {
                 if (!videos || videos.length === 0) {
                     videoContainer.innerHTML = `<div class="status">✨ No videos found here.</div>`;
@@ -499,79 +388,62 @@
 
                 const watchlist = getWatchlist();
                 let html = '';
-
                 const copyIcon = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
                 const shareIcon = `<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
 
                 videos.forEach(video => {
-                    const title = video.title || 'Untitled video';
-                    const thumbnail = video.thumbnail || 'https://via.placeholder.com/640x360/1a1f2a/00ffff?text=NO+THUMB';
+                    const title = escapeHtml(video.title || 'Untitled video');
+                    const thumbnail = video.thumbnail || '';
                     const link = video.link || video.url;
                     const playerUrl = getPlayerUrl(link);
-                    const size = video.size || 'Unknown';
+                    const size = escapeHtml(video.size || 'Unknown');
                     
                     const isSaved = watchlist.some(v => (v.id === video.id) || (v.link === link));
-                    const bookmarkClass = isSaved ? 'saved' : '';
-                    const bookmarkIcon = isSaved ? '🔖' : '🤍';
-
-                    const safeTitle = escapeHtml(title).replace(/'/g, "\\'");
-                    const safeUrl = escapeHtml(playerUrl);
+                    const bClass = isSaved ? 'saved' : '';
+                    const bIcon = isSaved ? '🔖' : '🤍';
 
                     html += `
                         <div class="card">
                             <div class="thumb-wrapper">
-                                <img src="${thumbnail}" alt="thumb" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22640%22 height=%22360%22%3E%3Crect width=%22640%22 height=%22360%22 fill=%22%23111822%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2220%22 fill=%22%2300ffff88%22 text-anchor=%22middle%22 dy=%22.3em%22%3EThumbnail Expired%3C/text%3E%3C/svg%3E'">
-                                <button class="bookmark-btn ${bookmarkClass}" data-id="${video.id}" data-link="${link}">${bookmarkIcon}</button>
+                                <img src="${thumbnail}" alt="thumb" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22640%22 height=%22360%22%3E%3Crect width=%22640%22 height=%22360%22 fill=%22%23111822%22/%3E%3C/svg%3E'">
+                                <button class="bookmark-btn ${bClass}" data-id="${video.id}" data-link="${link}">${bIcon}</button>
                             </div>
                             <div class="title-row">
-                                <div class="title" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
-                                <div class="size-badge">📦 ${escapeHtml(size)}</div>
+                                <div class="title">${title}</div>
+                                <div class="size-badge">📦 ${size}</div>
                             </div>
                             <div class="action-row">
-                                <a href="${playerUrl}" target="_blank" rel="noopener noreferrer" class="play-btn" data-id="${video.id}">▶ PLAY</a>
-                                <button class="icon-btn copy-btn" data-url="${safeUrl}" title="Copy Link">${copyIcon}</button>
-                                <button class="icon-btn share-btn" data-url="${safeUrl}" data-title="${safeTitle}" title="Share">${shareIcon}</button>
+                                <a href="${playerUrl}" target="_blank" class="play-btn" data-id="${video.id}">▶ PLAY</a>
+                                <button class="icon-btn copy-btn" data-url="${playerUrl}">${copyIcon}</button>
+                                <button class="icon-btn share-btn" data-url="${playerUrl}" data-title="${title}">${shareIcon}</button>
                             </div>
                         </div>
                     `;
                 });
-
                 videoContainer.innerHTML = html;
 
-                document.querySelectorAll('.bookmark-btn').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        const id = this.getAttribute('data-id');
-                        const link = this.getAttribute('data-link');
-                        const video = videos.find(v => v.id == id || (v.link || v.url) === link);
-                        if (video) toggleWatchlist(video, this);
-                    });
+                // Event Listeners
+                videoContainer.querySelectorAll('.bookmark-btn').forEach(btn => {
+                    btn.onclick = function() {
+                        const id = this.dataset.id, link = this.dataset.link;
+                        const v = videos.find(x => x.id == id || (x.link || x.url) === link);
+                        if (v) toggleWatchlist(v, this);
+                    };
                 });
-
-                document.querySelectorAll('.play-btn').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        const id = this.getAttribute('data-id');
-                        const video = videos.find(v => v.id == id);
-                        if (video) addToHistory(video);
-                    });
+                videoContainer.querySelectorAll('.play-btn').forEach(btn => {
+                    btn.onclick = function() {
+                        const v = videos.find(x => x.id == this.dataset.id);
+                        if (v) addToHistory(v);
+                    };
                 });
-
-                document.querySelectorAll('.copy-btn').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        copyToClipboard(this.getAttribute('data-url'));
-                    });
+                videoContainer.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.onclick = function() { copyToClipboard(this.dataset.url); };
                 });
-
-                document.querySelectorAll('.share-btn').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        shareLink(this.getAttribute('data-title'), this.getAttribute('data-url'));
-                    });
+                videoContainer.querySelectorAll('.share-btn').forEach(btn => {
+                    btn.onclick = function() { shareLink(this.dataset.title, this.dataset.url); };
                 });
             }
 
-            // ---------- BUILD PAGINATION ----------
             function buildPageButtons() {
                 if (isWatchlistMode || isHistoryMode) {
                     paginationSection.style.display = 'none';
@@ -581,60 +453,45 @@
                 pageNumbersEl.innerHTML = '';
 
                 const half = Math.floor(MAX_PAGE_BUTTONS / 2);
-                let startPage = Math.max(1, currentPage - half);
-                let endPage = startPage + MAX_PAGE_BUTTONS - 1;
+                let start = Math.max(1, currentPage - half);
+                let end = start + MAX_PAGE_BUTTONS - 1;
 
-                if (startPage === 1) endPage = MAX_PAGE_BUTTONS;
-                if (endPage > totalPages) endPage = totalPages;
-                if (startPage > endPage) startPage = Math.max(1, endPage - MAX_PAGE_BUTTONS + 1);
+                if (start === 1) end = MAX_PAGE_BUTTONS;
+                if (end > totalPages) end = totalPages;
+                if (start > end) start = Math.max(1, end - MAX_PAGE_BUTTONS + 1);
 
-                const prevBtn = document.createElement('button');
-                prevBtn.className = 'page-btn nav-btn';
-                prevBtn.innerHTML = '&#9664;';
-                prevBtn.disabled = (currentPage <= 1);
-                prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
-                pageNumbersEl.appendChild(prevBtn);
+                const createBtn = (txt, p, active = false, disabled = false) => {
+                    const b = document.createElement('button');
+                    b.className = 'page-btn' + (active ? ' active' : '');
+                    b.innerHTML = txt;
+                    b.disabled = disabled;
+                    if (!disabled && !active) b.onclick = () => goToPage(p);
+                    return b;
+                };
 
-                for (let p = startPage; p <= endPage; p++) {
-                    const btn = document.createElement('button');
-                    btn.className = 'page-btn' + (p === currentPage ? ' active' : '');
-                    btn.textContent = p;
-                    btn.addEventListener('click', () => goToPage(p));
-                    pageNumbersEl.appendChild(btn);
-                }
-
-                const nextBtn = document.createElement('button');
-                nextBtn.className = 'page-btn nav-btn';
-                nextBtn.innerHTML = '&#9654;';
-                nextBtn.disabled = (currentPage >= totalPages);
-                nextBtn.addEventListener('click', () => {
-                    if (!nextBtn.disabled) goToPage(currentPage + 1);
-                });
-                pageNumbersEl.appendChild(nextBtn);
+                pageNumbersEl.appendChild(createBtn('&#9664;', currentPage - 1, false, currentPage <= 1));
+                for (let p = start; p <= end; p++) pageNumbersEl.appendChild(createBtn(p, p, p === currentPage));
+                pageNumbersEl.appendChild(createBtn('&#9654;', currentPage + 1, false, currentPage >= totalPages));
             }
 
-            // ---------- FETCH FUNCTIONS ----------
+            // FETCHING & ROUTING
             async function fetchPage(page) {
                 if (page < 1) return;
-                
-                // UI INSTANT UPDATE
                 isSearchMode = false; isWatchlistMode = false; isHistoryMode = false; isSubMode = false;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navHome);
-                window.scrollTo({ top: 0, behavior: 'smooth' }); // Instant scroll to top
                 updateBackButton();
-                
-                // Show loading instantly
-                videoContainer.innerHTML = `<div class="status">⚡ loading page ${page} ...</div>`;
-                pageNumbersEl.innerHTML = '<div style="color:#557788;font-size:0.85rem;padding:0.6rem;">loading...</div>';
-                paginationSection.style.display = 'flex';
-                
                 currentPage = page;
 
+                // INSTANT UI RESPONSE
+                videoContainer.innerHTML = `<div class="status">⚡ loading page ${page} ...</div>`;
+                pageNumbersEl.innerHTML = ''; 
+                paginationSection.style.display = 'flex';
+
                 try {
-                    const response = await fetch(`${API_BASE}${page}&per_page=${PER_PAGE}`);
-                    const json = await response.json();
-                    if (!json.data || !Array.isArray(json.data)) throw new Error('Invalid format');
+                    const res = await fetch(`${API_BASE}${page}&per_page=${PER_PAGE}`);
+                    const json = await res.json();
+                    if (!json.data) throw new Error('Invalid format');
 
                     totalPages = json.last_page || 1;
                     totalVideosEl.textContent = json.total ? json.total.toLocaleString() : 0;
@@ -643,30 +500,26 @@
 
                     renderVideos(json.data);
                     buildPageButtons();
-                } catch (error) {
+                } catch (e) {
                     videoContainer.innerHTML = `<div class="status error">❌ Failed to load videos.</div>`;
                 }
             }
 
             async function fetchSearch(query, page = 1) {
                 if (!query) return;
-                
-                // UI INSTANT UPDATE
                 isSearchMode = true; isWatchlistMode = false; isHistoryMode = false; isSubMode = true;
                 setActiveNav(navSearch);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
                 updateBackButton();
-                
+                currentSearchQuery = query; currentPage = page;
+
                 videoContainer.innerHTML = `<div class="status">🔍 Searching "${escapeHtml(query)}" ...</div>`;
                 pageNumbersEl.innerHTML = '';
                 paginationSection.style.display = 'flex';
-                
-                currentSearchQuery = query; currentPage = page;
 
                 try {
-                    const response = await fetch(`${SEARCH_API}${encodeURIComponent(query)}&page=${page}&limit=${PER_PAGE}`);
-                    const json = await response.json();
-                    if (!json.ok || !json.results) throw new Error('Invalid search format');
+                    const res = await fetch(`${SEARCH_API}${encodeURIComponent(query)}&page=${page}&limit=${PER_PAGE}`);
+                    const json = await res.json();
+                    if (!json.ok) throw new Error('Invalid search format');
 
                     totalPages = json.lastPage || 1;
                     totalVideosEl.textContent = json.total ? json.total.toLocaleString() : 0;
@@ -675,27 +528,20 @@
 
                     renderVideos(json.results);
                     buildPageButtons();
-                } catch (error) {
+                } catch (e) {
                     videoContainer.innerHTML = `<div class="status error">❌ Search failed.</div>`;
                 }
             }
 
             function showWatchlist() {
-                // Avoid re-rendering if already in watchlist
-                if (isWatchlistMode) {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    return;
-                }
-
-                // UI INSTANT UPDATE
+                if (isWatchlistMode) return; // Prevent double click lag
                 isWatchlistMode = true; isSearchMode = false; isHistoryMode = false; isSubMode = true;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navWatchlist);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
                 updateBackButton();
                 currentPage = 1;
 
-                // Local fetch is instant, no network delay
+                // Local fetch = instant
                 const list = getWatchlist();
                 totalVideosEl.textContent = list.length;
                 currentPageInfoEl.textContent = "1"; lastPageInfoEl.textContent = "1";
@@ -706,21 +552,14 @@
             }
 
             function showHistory() {
-                // Avoid re-rendering if already in history
-                if (isHistoryMode) {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    return;
-                }
-
-                // UI INSTANT UPDATE
+                if (isHistoryMode) return; // Prevent double click lag
                 isHistoryMode = true; isWatchlistMode = false; isSearchMode = false; isSubMode = true;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navHistory);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
                 updateBackButton();
                 currentPage = 1;
 
-                // Local fetch is instant, no network delay
+                // Local fetch = instant
                 const list = getHistory();
                 totalVideosEl.textContent = list.length;
                 currentPageInfoEl.textContent = "1"; lastPageInfoEl.textContent = "1";
@@ -736,45 +575,40 @@
                 else fetchPage(page);
             }
 
-            // ---------- EVENT LISTENERS ----------
+            // EVENTS
+            navHome.onclick = () => fetchPage(1);
+            navHistory.onclick = showHistory;
+            navWatchlist.onclick = showWatchlist;
             
-            navHome.addEventListener('click', () => fetchPage(1));
-            navHistory.addEventListener('click', showHistory);
-            navWatchlist.addEventListener('click', showWatchlist);
-            
-            // Search Toggle - Instant open/close
-            navSearch.addEventListener('click', () => {
+            navSearch.onclick = () => {
                 const isShowing = searchWrapper.classList.contains('show');
                 if (!isShowing) {
                     searchWrapper.classList.add('show');
-                    setTimeout(() => searchInput.focus(), 100); // Small delay to let animation finish
+                    setTimeout(() => searchInput.focus(), 50);
                 } else {
                     searchWrapper.classList.remove('show');
                 }
-            });
+            };
 
-            const performSearch = () => {
+            const doSearch = () => {
                 const q = searchInput.value.trim();
                 if (q) {
                     searchWrapper.classList.remove('show');
                     fetchSearch(q, 1);
                 }
             };
-            searchBtn.addEventListener('click', performSearch);
-            searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
+            searchBtn.onclick = doSearch;
+            searchInput.onkeydown = (e) => { if (e.key === 'Enter') doSearch(); };
 
-            // Title click to Home
-            document.getElementById('homeBtn').addEventListener('click', () => fetchPage(1));
+            document.getElementById('homeBtn').onclick = () => fetchPage(1);
 
-            gotoBtn.addEventListener('click', () => {
-                const raw = gotoInput.value.trim();
-                if (!raw) return;
-                const p = parseInt(raw, 10);
+            gotoBtn.onclick = () => {
+                const p = parseInt(gotoInput.value.trim(), 10);
                 if (p >= 1 && p <= totalPages) { gotoInput.value = ''; goToPage(p); }
-            });
-            gotoInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') gotoBtn.click(); });
+            };
+            gotoInput.onkeydown = (e) => { if (e.key === 'Enter') gotoBtn.click(); };
 
-            // ---------- INIT ----------
+            // INIT
             fetchPage(1);
         })();
     </script>
