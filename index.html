@@ -52,6 +52,7 @@
             justify-content: space-between;
             margin-bottom: 1rem;
             padding: 0 0.25rem;
+            gap: 10px;
         }
 
         .header h1 {
@@ -67,23 +68,28 @@
             cursor: pointer;
         }
 
-        .watchlist-btn {
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .hdr-btn {
             background: rgba(0, 255, 255, 0.1);
             border: 1px solid #00ffff;
             color: #00ffff;
-            padding: 0.4rem 0.8rem;
+            padding: 0.4rem 0.6rem;
             border-radius: 8px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             transition: all 0.3s;
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
         }
-        .watchlist-btn:hover { background: rgba(0, 255, 255, 0.2); box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); }
-        .watchlist-btn.active { background: #00ffff; color: #000; }
+        .hdr-btn:hover { background: rgba(0, 255, 255, 0.2); box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); }
+        .hdr-btn.active { background: #00ffff; color: #000; }
 
         /* ---------- SEARCH BAR ---------- */
         .search-container {
@@ -380,7 +386,7 @@
         /* Responsive */
         @media (max-width: 480px) {
             .header h1 { font-size: 1.3rem; }
-            .watchlist-btn { font-size: 0.75rem; padding: 0.3rem 0.6rem; }
+            .hdr-btn { font-size: 0.7rem; padding: 0.3rem 0.5rem; }
             .title { font-size: 0.9rem; }
             .page-btn { width: 40px; height: 40px; font-size: 0.9rem; }
             .action-row { gap: 8px; }
@@ -395,9 +401,14 @@
         <!-- HEADER -->
         <div class="header">
             <h1 id="homeBtn">NEON·PIX</h1>
-            <button class="watchlist-btn" id="watchlistBtn">
-                <span>🔖</span> My List
-            </button>
+            <div class="header-actions">
+                <button class="hdr-btn" id="historyBtn">
+                    <span>🕒</span> History
+                </button>
+                <button class="hdr-btn" id="watchlistBtn">
+                    <span>🔖</span> My List
+                </button>
+            </div>
         </div>
 
         <!-- SEARCH BAR -->
@@ -435,7 +446,7 @@
             // ---------- CONFIG ----------
             const API_BASE = "https://teradiskadda.in/api/v1/videos?page=";
             const SEARCH_API = "https://app.teradiskadda.in/api/search?q=";
-            const PER_PAGE = 60;
+            const PER_PAGE = 10;
             const BOT_BASE = "https://t.me/neon_player_bot/app?startapp=";
             const MAX_PAGE_BUTTONS = 5;
 
@@ -444,6 +455,7 @@
             let totalPages = 1;
             let isSearchMode = false;
             let isWatchlistMode = false;
+            let isHistoryMode = false;
             let currentSearchQuery = "";
 
             // DOM Elements
@@ -458,6 +470,7 @@
             const lastPageInfoEl = document.getElementById('lastPageInfo');
 
             const homeBtn = document.getElementById('homeBtn');
+            const historyBtn = document.getElementById('historyBtn');
             const watchlistBtn = document.getElementById('watchlistBtn');
             const searchInput = document.getElementById('searchInput');
             const searchBtn = document.getElementById('searchBtn');
@@ -505,7 +518,7 @@
                 textArea.remove();
             }
 
-            // FIXED: Function to Share Link (Telegram Native Fallback)
+            // Function to Share Link
             async function shareLink(title, url) {
                 const shareData = {
                     title: title,
@@ -516,9 +529,8 @@
                 if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
                     try {
                         await navigator.share(shareData);
-                        return; // Successfully shared
+                        return;
                     } catch (err) {
-                        // If user cancels or fails, do nothing
                         if (err.name !== 'AbortError') {
                             console.log('Share failed', err);
                         }
@@ -526,7 +538,6 @@
                     }
                 }
                 
-                // Fallback: Open Telegram Share URL (Works perfectly inside Telegram WebApp)
                 const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
                 window.open(tgShareUrl, '_blank');
             }
@@ -590,6 +601,34 @@
                 localStorage.setItem('neonWatchlist', JSON.stringify(list));
             }
 
+            // ---------- HISTORY LOGIC (NEW) ----------
+            function getHistory() {
+                try {
+                    return JSON.parse(localStorage.getItem('neonHistory')) || [];
+                } catch(e) { return []; }
+            }
+
+            function addToHistory(video) {
+                let history = getHistory();
+                // Remove if already exists so it goes to the top
+                history = history.filter(v => (v.id !== video.id) && (v.link !== (video.link || video.url)));
+                
+                const safeVideo = {
+                    id: video.id,
+                    title: video.title,
+                    thumbnail: video.thumbnail,
+                    size: video.size,
+                    link: video.link || video.url
+                };
+                
+                history.unshift(safeVideo); // Add to beginning
+                
+                // Max history limit (e.g. 50 videos)
+                if(history.length > 50) history = history.slice(0, 50);
+                
+                localStorage.setItem('neonHistory', JSON.stringify(history));
+            }
+
             // ---------- RENDER VIDEOS ----------
             function renderVideos(videos) {
                 if (!videos || videos.length === 0) {
@@ -600,7 +639,7 @@
                 const watchlist = getWatchlist();
                 let html = '';
 
-                // SVG Icons (Copy & Share/Paper Plane)
+                // SVG Icons
                 const copyIcon = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
                 const shareIcon = `<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
 
@@ -615,7 +654,6 @@
                     const bookmarkClass = isSaved ? 'saved' : '';
                     const bookmarkIcon = isSaved ? '🔖' : '🤍';
 
-                    // Escape title and URL for attributes
                     const safeTitle = escapeHtml(title).replace(/'/g, "\\'");
                     const safeUrl = escapeHtml(playerUrl);
 
@@ -630,7 +668,7 @@
                                 <div class="size-badge">📦 ${escapeHtml(size)}</div>
                             </div>
                             <div class="action-row">
-                                <a href="${playerUrl}" target="_blank" rel="noopener noreferrer" class="play-btn">▶ PLAY</a>
+                                <a href="${playerUrl}" target="_blank" rel="noopener noreferrer" class="play-btn" data-id="${video.id}">▶ PLAY</a>
                                 <button class="icon-btn copy-btn" data-url="${safeUrl}" title="Copy Link">${copyIcon}</button>
                                 <button class="icon-btn share-btn" data-url="${safeUrl}" data-title="${safeTitle}" title="Share">${shareIcon}</button>
                             </div>
@@ -640,7 +678,7 @@
 
                 videoContainer.innerHTML = html;
 
-                // Add Event Listeners for Buttons
+                // Add Event Listeners
                 document.querySelectorAll('.bookmark-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
@@ -651,27 +689,34 @@
                     });
                 });
 
+                // Play Button - Add to History
+                document.querySelectorAll('.play-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        const id = this.getAttribute('data-id');
+                        const video = videos.find(v => v.id == id);
+                        if (video) addToHistory(video);
+                        // Note: Link naturally opens in new tab due to target="_blank"
+                    });
+                });
+
                 document.querySelectorAll('.copy-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
-                        const url = this.getAttribute('data-url');
-                        copyToClipboard(url);
+                        copyToClipboard(this.getAttribute('data-url'));
                     });
                 });
 
                 document.querySelectorAll('.share-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
-                        const url = this.getAttribute('data-url');
-                        const title = this.getAttribute('data-title');
-                        shareLink(title, url);
+                        shareLink(this.getAttribute('data-title'), this.getAttribute('data-url'));
                     });
                 });
             }
 
             // ---------- BUILD PAGINATION ----------
             function buildPageButtons() {
-                if (isWatchlistMode) {
+                if (isWatchlistMode || isHistoryMode) {
                     paginationSection.style.display = 'none';
                     return;
                 }
@@ -717,6 +762,8 @@
                 
                 isSearchMode = false;
                 isWatchlistMode = false;
+                isHistoryMode = false;
+                historyBtn.classList.remove('active');
                 watchlistBtn.classList.remove('active');
                 currentPage = page;
 
@@ -748,6 +795,8 @@
 
                 isSearchMode = true;
                 isWatchlistMode = false;
+                isHistoryMode = false;
+                historyBtn.classList.remove('active');
                 watchlistBtn.classList.remove('active');
                 currentSearchQuery = query;
                 currentPage = page;
@@ -778,7 +827,9 @@
             function showWatchlist() {
                 isWatchlistMode = true;
                 isSearchMode = false;
+                isHistoryMode = false;
                 watchlistBtn.classList.add('active');
+                historyBtn.classList.remove('active');
                 currentPage = 1;
 
                 const list = getWatchlist();
@@ -794,9 +845,31 @@
                 buildPageButtons();
             }
 
+            // ---------- SHOW HISTORY (NEW) ----------
+            function showHistory() {
+                isHistoryMode = true;
+                isWatchlistMode = false;
+                isSearchMode = false;
+                historyBtn.classList.add('active');
+                watchlistBtn.classList.remove('active');
+                currentPage = 1;
+
+                const list = getHistory();
+                totalVideosEl.textContent = list.length;
+                currentPageInfoEl.textContent = "1";
+                lastPageInfoEl.textContent = "1";
+
+                if (list.length === 0) {
+                    videoContainer.innerHTML = `<div class="status">🕒 You haven't watched any videos yet.</div>`;
+                } else {
+                    renderVideos(list);
+                }
+                buildPageButtons();
+            }
+
             // ---------- NAVIGATION ----------
             function goToPage(page) {
-                if (isWatchlistMode) return; 
+                if (isWatchlistMode || isHistoryMode) return; 
                 if (isSearchMode) {
                     fetchSearch(currentSearchQuery, page);
                 } else {
@@ -824,6 +897,7 @@
             });
 
             watchlistBtn.addEventListener('click', showWatchlist);
+            historyBtn.addEventListener('click', showHistory);
 
             gotoBtn.addEventListener('click', () => {
                 const raw = gotoInput.value.trim();
