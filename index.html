@@ -35,8 +35,8 @@
         .app { max-width: 720px; width: 100%; margin: 0 auto; }
 
         .header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 1rem; padding: 0.5rem 0.5rem;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 1rem; padding: 0.5rem 0;
         }
 
         .header h1 {
@@ -48,17 +48,6 @@
             filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.4));
             cursor: pointer;
         }
-
-        /* Refresh Button */
-        .refresh-btn {
-            background: rgba(0, 255, 255, 0.1);
-            border: 1px solid rgba(0, 255, 255, 0.4);
-            color: #00ffff; width: 40px; height: 40px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.3s;
-        }
-        .refresh-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .refresh-btn.spin svg { animation: spin 1s linear infinite; }
 
         .info-bar {
             width: 100%; text-align: center; font-size: 0.85rem;
@@ -194,6 +183,9 @@
         .nav-item svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .nav-item.active { color: #00ffff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.6); }
         .nav-item.active svg { filter: drop-shadow(0 0 5px #00ffff); }
+        
+        /* Spin Animation for Refresh Icon */
+        .nav-item.spin svg { animation: spin 1s linear infinite; }
 
         /* Search Input inside Bottom Nav */
         .search-input-wrapper {
@@ -232,9 +224,6 @@
     <div class="app">
         <div class="header">
             <h1 id="homeBtn">Desi Gallery</h1>
-            <button class="refresh-btn" id="refreshBtn" title="Refresh">
-                <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-            </button>
         </div>
 
         <div class="info-bar" id="infoBar">
@@ -267,6 +256,13 @@
             <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             <span>Home</span>
         </button>
+        
+        <!-- NEW REFRESH BUTTON IN BOTTOM NAV -->
+        <button class="nav-item" id="navRefresh">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            <span>Refresh</span>
+        </button>
+
         <button class="nav-item" id="navSearch">
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <span>Search</span>
@@ -306,6 +302,9 @@
             let currentSearchQuery = "";
             let currentVideosData = [];
             
+            // SCROLL MEMORY
+            let homeScrollPosition = 0;
+
             // CACHE STATE (Home Page Data)
             let homeCache = {
                 page: 0,
@@ -323,9 +322,9 @@
             const totalVideosEl = document.getElementById('totalVideos');
             const currentPageInfoEl = document.getElementById('currentPageInfo');
             const lastPageInfoEl = document.getElementById('lastPageInfo');
-            const refreshBtn = document.getElementById('refreshBtn');
             
             const navHome = document.getElementById('navHome');
+            const navRefresh = document.getElementById('navRefresh');
             const navSearch = document.getElementById('navSearch');
             const navHistory = document.getElementById('navHistory');
             const navWatchlist = document.getElementById('navWatchlist');
@@ -521,7 +520,12 @@
             function fetchPage(page, forceRefresh = false) {
                 if (page < 1) return;
                 
-                // CACHE CHECK: Agar same page hai aur force refresh nahi hai, toh API mat maaro
+                // Agar Home tab se bhar nikal rahe hain, toh scroll position save karo
+                if (!isSearchMode && !isWatchlistMode && !isHistoryMode) {
+                    homeScrollPosition = window.scrollY;
+                }
+
+                // CACHE CHECK
                 if (!forceRefresh && homeCache.page === page && homeCache.data) {
                     isSearchMode = false; isWatchlistMode = false; isHistoryMode = false;
                     searchWrapper.classList.remove('show');
@@ -537,11 +541,13 @@
 
                     renderVideos(homeCache.data);
                     buildPageButtons();
-                    window.scrollTo(0, 0);
-                    return; // API Call rok di gayi
+                    
+                    // Scroll restore karo (Thodi der baad taaki DOM render ho jaye)
+                    setTimeout(() => { window.scrollTo(0, homeScrollPosition); }, 50);
+                    return; 
                 }
 
-                // Agar naya page hai ya force refresh hai, toh API call karo
+                // Naya Data Fetch Karo
                 isSearchMode = false; isWatchlistMode = false; isHistoryMode = false;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navHome);
@@ -551,6 +557,7 @@
                 showLoadingUI();
                 paginationSection.style.display = 'flex';
                 pageNumbersEl.innerHTML = '';
+                homeScrollPosition = 0; // Nayi API par top par jao
 
                 fetch(`${API_BASE}${page}&per_page=${PER_PAGE}`)
                     .then(res => res.json())
@@ -579,7 +586,7 @@
                         videoContainer.innerHTML = `<div class="loading-box" style="color:#ff6b9d;border-color:#ff6b9d44"><span>❌ Failed to load videos.</span></div>`;
                     })
                     .finally(() => {
-                        refreshBtn.classList.remove('spin');
+                        navRefresh.classList.remove('spin');
                     });
             }
 
@@ -608,11 +615,19 @@
                     })
                     .catch(err => {
                         videoContainer.innerHTML = `<div class="loading-box" style="color:#ff6b9d;border-color:#ff6b9d44"><span>❌ Search failed.</span></div>`;
+                    })
+                    .finally(() => {
+                        navRefresh.classList.remove('spin');
                     });
             }
 
             function showWatchlist() {
+                // Save home scroll if coming from home
+                if (!isSearchMode && !isWatchlistMode && !isHistoryMode) {
+                    homeScrollPosition = window.scrollY;
+                }
                 if (isWatchlistMode) { window.scrollTo(0,0); return; }
+
                 isWatchlistMode = true; isSearchMode = false; isHistoryMode = false;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navWatchlist);
@@ -629,7 +644,12 @@
             }
 
             function showHistory() {
+                // Save home scroll if coming from home
+                if (!isSearchMode && !isWatchlistMode && !isHistoryMode) {
+                    homeScrollPosition = window.scrollY;
+                }
                 if (isHistoryMode) { window.scrollTo(0,0); return; }
+
                 isHistoryMode = true; isWatchlistMode = false; isSearchMode = false;
                 searchWrapper.classList.remove('show');
                 setActiveNav(navHistory);
@@ -652,19 +672,19 @@
             }
 
             // EVENT LISTENERS FOR UI
-            navHome.addEventListener('click', () => fetchPage(1)); // Click on Home tab won't refresh if cached
+            navHome.addEventListener('click', () => fetchPage(currentPage)); // Fetch current page, not just 1
             navHistory.addEventListener('click', showHistory);
             navWatchlist.addEventListener('click', showWatchlist);
             
-            // REFRESH BUTTON (Manual Pull to Refresh)
-            refreshBtn.addEventListener('click', () => {
-                refreshBtn.classList.add('spin'); // Spin animation
+            // NAVBAR REFRESH BUTTON
+            navRefresh.addEventListener('click', () => {
+                navRefresh.classList.add('spin'); // Spin animation
                 if (isWatchlistMode) {
                     showWatchlist();
-                    setTimeout(() => refreshBtn.classList.remove('spin'), 500);
+                    setTimeout(() => navRefresh.classList.remove('spin'), 500);
                 } else if (isHistoryMode) {
                     showHistory();
-                    setTimeout(() => refreshBtn.classList.remove('spin'), 500);
+                    setTimeout(() => navRefresh.classList.remove('spin'), 500);
                 } else if (isSearchMode) {
                     fetchSearch(currentSearchQuery, 1);
                 } else {
@@ -672,7 +692,7 @@
                     fetchPage(currentPage, true); // Force fetch
                 }
             });
-            
+
             navSearch.addEventListener('click', () => {
                 searchWrapper.classList.toggle('show');
                 if (searchWrapper.classList.contains('show')) {
