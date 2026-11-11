@@ -149,7 +149,6 @@
             color: #fff; font-weight: 800; cursor: pointer; margin-left: 0.3rem;
         }
 
-        /* Loading Skeleton */
         .loading-box {
             text-align: center; padding: 3rem 1rem; font-size: 1.1rem;
             color: #00ffff; background: #0d141ecc;
@@ -164,7 +163,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ---------- BOTTOM NAVIGATION BAR ---------- */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: rgba(10, 12, 16, 0.98); backdrop-filter: blur(15px);
@@ -184,10 +182,8 @@
         .nav-item.active { color: #00ffff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.6); }
         .nav-item.active svg { filter: drop-shadow(0 0 5px #00ffff); }
         
-        /* Spin Animation for Refresh Icon */
         .nav-item.spin svg { animation: spin 1s linear infinite; }
 
-        /* Search Input inside Bottom Nav */
         .search-input-wrapper {
             position: fixed; bottom: 80px; left: 50%;
             transform: translateX(-50%);
@@ -231,7 +227,6 @@
         </div>
 
         <div id="videoContainer" class="video-grid">
-            <!-- Content renders here -->
         </div>
 
         <div class="pagination" id="paginationSection">
@@ -244,25 +239,20 @@
         </div>
     </div>
     
-    <!-- SEARCH BAR -->
     <div class="search-input-wrapper" id="searchWrapper">
         <input type="text" id="searchInput" class="search-input" placeholder="Search videos...">
         <button id="searchBtn" class="search-btn">🔍</button>
     </div>
 
-    <!-- BOTTOM NAVIGATION BAR -->
     <div class="bottom-nav">
         <button class="nav-item active" id="navHome">
             <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             <span>Home</span>
         </button>
-        
-        <!-- NEW REFRESH BUTTON IN BOTTOM NAV -->
         <button class="nav-item" id="navRefresh">
             <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
             <span>Refresh</span>
         </button>
-
         <button class="nav-item" id="navSearch">
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <span>Search</span>
@@ -279,21 +269,15 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // TELEGRAM SETUP
             const tg = window.Telegram?.WebApp;
-            if (tg) {
-                tg.ready();
-                tg.expand();
-            }
+            if (tg) { tg.ready(); tg.expand(); }
 
-            // CONFIG
             const API_BASE = "https://teradiskadda.in/api/v1/videos?page=";
             const SEARCH_API = "https://app.teradiskadda.in/api/search?q=";
             const PER_PAGE = 100;
             const BOT_BASE = "https://t.me/neon_player_bot/app?startapp=";
             const MAX_PAGE_BUTTONS = 5;
 
-            // STATE
             let currentPage = 1;
             let totalPages = 1;
             let isSearchMode = false;
@@ -301,19 +285,10 @@
             let isHistoryMode = false;
             let currentSearchQuery = "";
             let currentVideosData = [];
-            
-            // SCROLL MEMORY
             let homeScrollPosition = 0;
 
-            // CACHE STATE (Home Page Data)
-            let homeCache = {
-                page: 0,
-                totalPages: 1,
-                totalVideos: 0,
-                data: null
-            };
+            let homeCache = { page: 0, totalPages: 1, totalVideos: 0, data: null };
 
-            // DOM ELEMENTS
             const videoContainer = document.getElementById('videoContainer');
             const pageNumbersEl = document.getElementById('pageNumbers');
             const gotoInput = document.getElementById('gotoInput');
@@ -333,7 +308,6 @@
             const searchInput = document.getElementById('searchInput');
             const searchBtn = document.getElementById('searchBtn');
 
-            // HELPERS
             function setActiveNav(activeBtn) {
                 document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
                 if (activeBtn) activeBtn.classList.add('active');
@@ -341,8 +315,7 @@
 
             function toggleTGButton(show) {
                 if (!tg || !tg.BackButton) return;
-                if (show) tg.BackButton.show();
-                else tg.BackButton.hide();
+                if (show) tg.BackButton.show(); else tg.BackButton.hide();
             }
 
             function showLoadingUI() {
@@ -366,6 +339,36 @@
                 return BOT_BASE + (id || "").split('?')[0].split('&')[0].split('/')[0];
             }
 
+            // ==========================================
+            // THUMBNAIL FIX LOGIC (TeraBox API Se Naya Link)
+            // ==========================================
+            async function refreshThumbnail(videoLink, imgElement) {
+                try {
+                    // TeraBox ke API se naya thumbnail fetch karne ki koshish
+                    const res = await fetch(`https://getindevice.com/api/download/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: videoLink })
+                    });
+                    const data = await res.json();
+                    
+                    // Check karo ki naya thumbnail mila ya nahi
+                    let newThumb = null;
+                    if (data.videos && data.videos.length > 0) newThumb = data.videos[0].thumbnail;
+                    else if (data.photos && data.photos.length > 0) newThumb = data.photos[0].thumbnail;
+                    
+                    if (newThumb) {
+                        imgElement.src = newThumb;
+                        imgElement.style.opacity = '1'; // Fade-in effect
+                    } else {
+                        // Fallback placeholder
+                        imgElement.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22640%22 height=%22360%22%3E%3Crect width=%22640%22 height=%22360%22 fill=%22%23111822%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2220%22 fill=%22%2300ffff88%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo Thumbnail%3C/text%3E%3C/svg%3E';
+                    }
+                } catch (e) {
+                    console.log("Thumbnail refresh failed", e);
+                }
+            }
+
             function copyToClipboard(text) {
                 if (navigator.clipboard) navigator.clipboard.writeText(text);
                 else {
@@ -379,7 +382,6 @@
                 else window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, '_blank');
             }
 
-            // LOCAL STORAGE (HISTORY & WATCHLIST)
             function getWatchlist() { try { return JSON.parse(localStorage.getItem('neonWatchlist')) || []; } catch(e) { return []; } }
             function getHistory() { try { return JSON.parse(localStorage.getItem('neonHistory')) || []; } catch(e) { return []; } }
 
@@ -399,14 +401,11 @@
             function addToHistory(video) {
                 let history = getHistory();
                 history = history.filter(v => (v.id !== video.id) && (v.link !== (video.link || video.url)));
-                history.unshift({ 
-                    id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url 
-                });
+                history.unshift({ id: video.id, title: video.title, thumbnail: video.thumbnail, size: video.size, link: video.link || video.url });
                 if(history.length > 50) history = history.slice(0, 50); 
                 localStorage.setItem('neonHistory', JSON.stringify(history));
             }
 
-            // CORE RENDERING ENGINE
             function renderVideos(videos) {
                 currentVideosData = videos; 
                 
@@ -434,7 +433,9 @@
                     html += `
                         <div class="card">
                             <div class="thumb-wrapper">
-                                <img src="${thumbnail}" alt="thumb" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22640%22 height=%22360%22%3E%3Crect width=%22640%22 height=%22360%22 fill=%22%23111822%22/%3E%3C/svg%3E'">
+                                <img src="${thumbnail}" alt="thumb" loading="lazy" 
+                                     onerror="this.style.opacity='0.5'; window.refreshThumbnail('${link}', this)"
+                                     onload="this.style.opacity='1'">
                                 <button class="bookmark-btn ${bClass}" data-index="${index}">${bIcon}</button>
                             </div>
                             <div class="title-row">
@@ -452,7 +453,9 @@
                 videoContainer.innerHTML = html;
             }
 
-            // EVENT DELEGATION
+            // Global function banaya taaki onerror se call ho sake
+            window.refreshThumbnail = refreshThumbnail;
+
             videoContainer.addEventListener('click', (e) => {
                 const btn = e.target.closest('button') || e.target.closest('a.play-btn');
                 if (!btn) return;
@@ -482,19 +485,14 @@
                 }
             });
 
-            // PAGINATION BUILDER
             function buildPageButtons() {
-                if (isWatchlistMode || isHistoryMode) {
-                    paginationSection.style.display = 'none';
-                    return;
-                }
+                if (isWatchlistMode || isHistoryMode) { paginationSection.style.display = 'none'; return; }
                 paginationSection.style.display = 'flex';
                 pageNumbersEl.innerHTML = '';
 
                 const half = Math.floor(MAX_PAGE_BUTTONS / 2);
                 let start = Math.max(1, currentPage - half);
                 let end = start + MAX_PAGE_BUTTONS - 1;
-
                 if (start === 1) end = MAX_PAGE_BUTTONS;
                 if (end > totalPages) end = totalPages;
                 if (start > end) start = Math.max(1, end - MAX_PAGE_BUTTONS + 1);
@@ -513,25 +511,15 @@
                 pageNumbersEl.appendChild(createBtn('&#9654;', currentPage + 1, false, currentPage >= totalPages));
             }
 
-            // ==========================================
-            // ROUTING & FETCHING WITH SMART CACHE
-            // ==========================================
-            
             function fetchPage(page, forceRefresh = false) {
                 if (page < 1) return;
                 
-                // Agar Home tab se bhar nikal rahe hain, toh scroll position save karo
-                if (!isSearchMode && !isWatchlistMode && !isHistoryMode) {
-                    homeScrollPosition = window.scrollY;
-                }
+                if (!isSearchMode && !isWatchlistMode && !isHistoryMode) homeScrollPosition = window.scrollY;
 
-                // CACHE CHECK
                 if (!forceRefresh && homeCache.page === page && homeCache.data) {
                     isSearchMode = false; isWatchlistMode = false; isHistoryMode = false;
                     searchWrapper.classList.remove('show');
-                    setActiveNav(navHome);
-                    toggleTGButton(false);
-                    currentPage = page;
+                    setActiveNav(navHome); toggleTGButton(false); currentPage = page;
                     
                     totalPages = homeCache.totalPages;
                     totalVideosEl.textContent = homeCache.totalVideos;
@@ -539,31 +527,24 @@
                     lastPageInfoEl.textContent = totalPages.toLocaleString();
                     paginationSection.style.display = 'flex';
 
-                    renderVideos(homeCache.data);
-                    buildPageButtons();
-                    
-                    // Scroll restore karo (Thodi der baad taaki DOM render ho jaye)
+                    renderVideos(homeCache.data); buildPageButtons();
                     setTimeout(() => { window.scrollTo(0, homeScrollPosition); }, 50);
                     return; 
                 }
 
-                // Naya Data Fetch Karo
                 isSearchMode = false; isWatchlistMode = false; isHistoryMode = false;
                 searchWrapper.classList.remove('show');
-                setActiveNav(navHome);
-                toggleTGButton(false);
-                currentPage = page;
+                setActiveNav(navHome); toggleTGButton(false); currentPage = page;
 
                 showLoadingUI();
                 paginationSection.style.display = 'flex';
                 pageNumbersEl.innerHTML = '';
-                homeScrollPosition = 0; // Nayi API par top par jao
+                homeScrollPosition = 0;
 
                 fetch(`${API_BASE}${page}&per_page=${PER_PAGE}`)
                     .then(res => res.json())
                     .then(json => {
                         if (!json.data) throw new Error('Invalid format');
-                        
                         totalPages = json.last_page || 1;
                         const totalVidStr = json.total ? json.total.toLocaleString() : 0;
                         
@@ -571,30 +552,19 @@
                         currentPageInfoEl.textContent = page;
                         lastPageInfoEl.textContent = totalPages.toLocaleString();
 
-                        // CACHE UPDATE
-                        homeCache = {
-                            page: page,
-                            totalPages: totalPages,
-                            totalVideos: totalVidStr,
-                            data: json.data
-                        };
-
-                        renderVideos(json.data);
-                        buildPageButtons();
+                        homeCache = { page, totalPages, totalVideos: totalVidStr, data: json.data };
+                        renderVideos(json.data); buildPageButtons();
                     })
                     .catch(err => {
                         videoContainer.innerHTML = `<div class="loading-box" style="color:#ff6b9d;border-color:#ff6b9d44"><span>❌ Failed to load videos.</span></div>`;
                     })
-                    .finally(() => {
-                        navRefresh.classList.remove('spin');
-                    });
+                    .finally(() => navRefresh.classList.remove('spin'));
             }
 
             function fetchSearch(query, page = 1) {
                 if (!query) return;
                 isSearchMode = true; isWatchlistMode = false; isHistoryMode = false;
-                setActiveNav(navSearch);
-                toggleTGButton(true);
+                setActiveNav(navSearch); toggleTGButton(true);
                 currentSearchQuery = query; currentPage = page;
 
                 showLoadingUI();
@@ -609,60 +579,42 @@
                         totalVideosEl.textContent = json.total ? json.total.toLocaleString() : 0;
                         currentPageInfoEl.textContent = json.currentPage || 1;
                         lastPageInfoEl.textContent = totalPages.toLocaleString();
-
-                        renderVideos(json.results);
-                        buildPageButtons();
+                        renderVideos(json.results); buildPageButtons();
                     })
                     .catch(err => {
                         videoContainer.innerHTML = `<div class="loading-box" style="color:#ff6b9d;border-color:#ff6b9d44"><span>❌ Search failed.</span></div>`;
                     })
-                    .finally(() => {
-                        navRefresh.classList.remove('spin');
-                    });
+                    .finally(() => navRefresh.classList.remove('spin'));
             }
 
             function showWatchlist() {
-                // Save home scroll if coming from home
-                if (!isSearchMode && !isWatchlistMode && !isHistoryMode) {
-                    homeScrollPosition = window.scrollY;
-                }
+                if (!isSearchMode && !isWatchlistMode && !isHistoryMode) homeScrollPosition = window.scrollY;
                 if (isWatchlistMode) { window.scrollTo(0,0); return; }
 
                 isWatchlistMode = true; isSearchMode = false; isHistoryMode = false;
                 searchWrapper.classList.remove('show');
-                setActiveNav(navWatchlist);
-                toggleTGButton(true);
-                currentPage = 1;
+                setActiveNav(navWatchlist); toggleTGButton(true); currentPage = 1;
 
                 const list = getWatchlist();
                 totalVideosEl.textContent = list.length;
                 currentPageInfoEl.textContent = "1"; lastPageInfoEl.textContent = "1";
                 
-                renderVideos(list);
-                buildPageButtons();
-                window.scrollTo(0,0);
+                renderVideos(list); buildPageButtons(); window.scrollTo(0,0);
             }
 
             function showHistory() {
-                // Save home scroll if coming from home
-                if (!isSearchMode && !isWatchlistMode && !isHistoryMode) {
-                    homeScrollPosition = window.scrollY;
-                }
+                if (!isSearchMode && !isWatchlistMode && !isHistoryMode) homeScrollPosition = window.scrollY;
                 if (isHistoryMode) { window.scrollTo(0,0); return; }
 
                 isHistoryMode = true; isWatchlistMode = false; isSearchMode = false;
                 searchWrapper.classList.remove('show');
-                setActiveNav(navHistory);
-                toggleTGButton(true);
-                currentPage = 1;
+                setActiveNav(navHistory); toggleTGButton(true); currentPage = 1;
 
                 const list = getHistory();
                 totalVideosEl.textContent = list.length;
                 currentPageInfoEl.textContent = "1"; lastPageInfoEl.textContent = "1";
 
-                renderVideos(list);
-                buildPageButtons();
-                window.scrollTo(0,0);
+                renderVideos(list); buildPageButtons(); window.scrollTo(0,0);
             }
 
             function goToPage(page) {
@@ -671,41 +623,26 @@
                 else fetchPage(page);
             }
 
-            // EVENT LISTENERS FOR UI
-            navHome.addEventListener('click', () => fetchPage(currentPage)); // Fetch current page, not just 1
+            navHome.addEventListener('click', () => fetchPage(currentPage));
             navHistory.addEventListener('click', showHistory);
             navWatchlist.addEventListener('click', showWatchlist);
             
-            // NAVBAR REFRESH BUTTON
             navRefresh.addEventListener('click', () => {
-                navRefresh.classList.add('spin'); // Spin animation
-                if (isWatchlistMode) {
-                    showWatchlist();
-                    setTimeout(() => navRefresh.classList.remove('spin'), 500);
-                } else if (isHistoryMode) {
-                    showHistory();
-                    setTimeout(() => navRefresh.classList.remove('spin'), 500);
-                } else if (isSearchMode) {
-                    fetchSearch(currentSearchQuery, 1);
-                } else {
-                    homeCache.page = 0; // Cache clear karo
-                    fetchPage(currentPage, true); // Force fetch
-                }
+                navRefresh.classList.add('spin');
+                if (isWatchlistMode) { showWatchlist(); setTimeout(() => navRefresh.classList.remove('spin'), 500); }
+                else if (isHistoryMode) { showHistory(); setTimeout(() => navRefresh.classList.remove('spin'), 500); }
+                else if (isSearchMode) { fetchSearch(currentSearchQuery, 1); }
+                else { homeCache.page = 0; fetchPage(currentPage, true); }
             });
 
             navSearch.addEventListener('click', () => {
                 searchWrapper.classList.toggle('show');
-                if (searchWrapper.classList.contains('show')) {
-                    setTimeout(() => searchInput.focus(), 50);
-                }
+                if (searchWrapper.classList.contains('show')) setTimeout(() => searchInput.focus(), 50);
             });
 
             const doSearch = () => {
                 const q = searchInput.value.trim();
-                if (q) {
-                    searchWrapper.classList.remove('show');
-                    fetchSearch(q, 1);
-                }
+                if (q) { searchWrapper.classList.remove('show'); fetchSearch(q, 1); }
             };
             searchBtn.addEventListener('click', doSearch);
             searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
@@ -718,7 +655,6 @@
             });
             gotoInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') gotoBtn.click(); });
 
-            // INIT
             fetchPage(1);
         });
     </script>
