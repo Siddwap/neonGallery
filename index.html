@@ -73,7 +73,6 @@
 
         .thumb-wrapper img { width: 100%; height: auto; display: block; object-fit: contain; }
 
-        /* Stylish Fallback Placeholder */
         .fallback-thumb {
             width: 100%; height: 180px;
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
@@ -287,11 +286,13 @@
             const SEARCH_API = "https://app.teradiskadda.in/api/search?q=";
             const THUMB_API = "https://app.teradiskadda.in/fvp/api/search/video";
             const PER_PAGE = 100;
-            const LOCAL_PER_PAGE = 10; // History & Watchlist Pagination
+            const LOCAL_PER_PAGE = 10;
             const BOT_BASE = "https://t.me/neon_player_bot/app?startapp=";
             const MAX_PAGE_BUTTONS = 5;
 
-            let currentPage = 1;
+            // Global state
+            let homeCurrentPage = 1; // Home page ka page number (Fix for refresh issue)
+            let currentPage = 1; // Generic current page (history/watchlist ke liye)
             let totalPages = 1;
             let isSearchMode = false;
             let isWatchlistMode = false;
@@ -601,7 +602,9 @@
                 if (!forceRefresh && homeCache.page === page && homeCache.data) {
                     isSearchMode = false; isWatchlistMode = false; isHistoryMode = false;
                     searchWrapper.classList.remove('show');
-                    setActiveNav(navHome); toggleTGButton(false); currentPage = page;
+                    setActiveNav(navHome); toggleTGButton(false); 
+                    currentPage = page; // UI ke liye
+                    homeCurrentPage = page; // Home state update
                     
                     totalPages = homeCache.totalPages;
                     totalVideosEl.textContent = homeCache.totalVideos;
@@ -616,7 +619,9 @@
 
                 isSearchMode = false; isWatchlistMode = false; isHistoryMode = false;
                 searchWrapper.classList.remove('show');
-                setActiveNav(navHome); toggleTGButton(false); currentPage = page;
+                setActiveNav(navHome); toggleTGButton(false); 
+                currentPage = page;
+                homeCurrentPage = page; // Update Home state
 
                 showLoadingUI();
                 paginationSection.style.display = 'flex';
@@ -669,9 +674,6 @@
                     .finally(() => navRefresh.classList.remove('spin'));
             }
 
-            // ==========================================
-            // PAGINATED WATCHLIST & HISTORY
-            // ==========================================
             function showWatchlist(page = 1) {
                 if (!isSearchMode && !isWatchlistMode && !isHistoryMode) homeScrollPosition = window.scrollY;
 
@@ -683,7 +685,6 @@
                 const fullList = getWatchlist();
                 totalPages = Math.ceil(fullList.length / LOCAL_PER_PAGE) || 1;
                 
-                // Slice for current page
                 const startIndex = (page - 1) * LOCAL_PER_PAGE;
                 const paginatedList = fullList.slice(startIndex, startIndex + LOCAL_PER_PAGE);
 
@@ -711,7 +712,6 @@
                 const fullList = getHistory();
                 totalPages = Math.ceil(fullList.length / LOCAL_PER_PAGE) || 1;
                 
-                // Slice for current page
                 const startIndex = (page - 1) * LOCAL_PER_PAGE;
                 const paginatedList = fullList.slice(startIndex, startIndex + LOCAL_PER_PAGE);
 
@@ -738,7 +738,9 @@
             // ==========================================
             // NAVIGATION BUTTONS
             // ==========================================
-            navHome.addEventListener('click', () => fetchPage(currentPage));
+            // FIX: Home button click par hamesha homeCurrentPage load hoga, na ki currentPage
+            navHome.addEventListener('click', () => fetchPage(homeCurrentPage));
+            
             navHistory.addEventListener('click', () => showHistory(1));
             navWatchlist.addEventListener('click', () => showWatchlist(1));
             
@@ -747,7 +749,10 @@
                 if (isWatchlistMode) { showWatchlist(currentPage); setTimeout(() => navRefresh.classList.remove('spin'), 500); }
                 else if (isHistoryMode) { showHistory(currentPage); setTimeout(() => navRefresh.classList.remove('spin'), 500); }
                 else if (isSearchMode) { fetchSearch(currentSearchQuery, 1); }
-                else { homeCache.page = 0; fetchPage(currentPage, true); }
+                else { 
+                    homeCache.page = 0; 
+                    fetchPage(homeCurrentPage, true); // Current Home page ko force refresh karo
+                }
             });
 
             navSearch.addEventListener('click', () => {
