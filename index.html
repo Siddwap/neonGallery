@@ -287,6 +287,7 @@
             const SEARCH_API = "https://app.teradiskadda.in/api/search?q=";
             const THUMB_API = "https://app.teradiskadda.in/fvp/api/search/video";
             const PER_PAGE = 100;
+            const LOCAL_PER_PAGE = 10; // History & Watchlist Pagination
             const BOT_BASE = "https://t.me/neon_player_bot/app?startapp=";
             const MAX_PAGE_BUTTONS = 5;
 
@@ -299,10 +300,8 @@
             let currentVideosData = [];
             let homeScrollPosition = 0;
 
-            // Queue for background thumbnails
             let thumbQueue = [];
             let isProcessingQueue = false;
-
             let homeCache = { page: 0, totalPages: 1, totalVideos: 0, data: null };
 
             const videoContainer = document.getElementById('videoContainer');
@@ -394,9 +393,7 @@
                 localStorage.setItem('neonHistory', JSON.stringify(history));
             }
 
-            // Update LocalStorage after new thumbnail is fetched
             function updateLocalStorageThumb(link, newThumb) {
-                // Update Watchlist
                 let wl = getWatchlist();
                 let wlIndex = wl.findIndex(v => (v.link === link) || (v.url === link));
                 if (wlIndex > -1) {
@@ -404,7 +401,6 @@
                     localStorage.setItem('neonWatchlist', JSON.stringify(wl));
                 }
 
-                // Update History
                 let hist = getHistory();
                 let histIndex = hist.findIndex(v => (v.link === link) || (v.url === link));
                 if (histIndex > -1) {
@@ -413,7 +409,6 @@
                 }
             }
 
-            // Background Queue Processor
             async function processThumbQueue() {
                 if (isProcessingQueue || thumbQueue.length === 0) return;
                 isProcessingQueue = true;
@@ -432,7 +427,6 @@
                         if (data.status && data.response && data.response.length > 0) {
                             const newThumb = data.response[0].thumbnail;
                             if (newThumb) {
-                                // Update UI
                                 const imgEl = document.getElementById(`img-${task.index}`);
                                 const fbEl = document.getElementById(`fb-${task.index}`);
                                 if (imgEl && fbEl) {
@@ -440,28 +434,21 @@
                                     imgEl.style.display = 'block';
                                     fbEl.style.display = 'none';
                                 }
-                                // Update LocalStorage
                                 updateLocalStorageThumb(task.link, newThumb);
                             }
                         }
                     } catch (e) {
-                        console.warn("Thumb regeneration failed for", task.link);
-                        // Agar fail ho jaye toh fallback me letter dikha do
                         const fbEl = document.getElementById(`fb-${task.index}`);
-                        if(fbEl) {
-                            fbEl.innerHTML = task.firstLetter;
-                        }
+                        if(fbEl) fbEl.innerHTML = task.firstLetter;
                     }
-                    // API ko thoda gap do
                     await new Promise(r => setTimeout(r, 500));
                 }
                 isProcessingQueue = false;
             }
 
-            // SMART RENDER WITH FALLBACK & QUEUE
             function renderVideos(videos) {
                 currentVideosData = videos; 
-                thumbQueue = []; // Reset queue on new render
+                thumbQueue = []; 
                 
                 if (!videos || videos.length === 0) {
                     videoContainer.innerHTML = `<div class="loading-box" style="color:#88ddff;border-color:#88ddff44"><span>✨ No videos found here.</span></div>`;
@@ -512,7 +499,6 @@
                 });
                 videoContainer.innerHTML = html;
 
-                // Add to Queue agar thumbnail missing hai ya broken hai
                 videos.forEach((video, index) => {
                     if (!video.thumbnail || video.thumbnail === '') {
                         thumbQueue.push({
@@ -523,13 +509,11 @@
                     }
                 });
 
-                // Start processing queue after rendering
                 setTimeout(() => {
                     processThumbQueue();
                 }, 500);
             }
 
-            // Fallback onerror handler to push to queue dynamically
             videoContainer.addEventListener('error', (e) => {
                 if (e.target.tagName === 'IMG') {
                     const img = e.target;
@@ -537,11 +521,9 @@
                     img.style.display = 'none';
                     fbDiv.style.display = 'flex';
                     
-                    // Get index from id
                     const index = parseInt(img.id.replace('img-', ''));
                     if(!isNaN(index) && currentVideosData[index]) {
                         const video = currentVideosData[index];
-                        // Check if already in queue
                         if(!thumbQueue.some(t => t.index === index)) {
                             thumbQueue.push({
                                 link: video.link || video.url,
@@ -552,7 +534,7 @@
                         }
                     }
                 }
-            }, true); // Capture phase for img errors
+            }, true); 
 
             videoContainer.addEventListener('click', (e) => {
                 const btn = e.target.closest('button') || e.target.closest('a.play-btn');
@@ -584,7 +566,6 @@
             });
 
             function buildPageButtons() {
-                if (isWatchlistMode || isHistoryMode) { paginationSection.style.display = 'none'; return; }
                 paginationSection.style.display = 'flex';
                 pageNumbersEl.innerHTML = '';
 
@@ -609,7 +590,9 @@
                 pageNumbersEl.appendChild(createBtn('&#9654;', currentPage + 1, false, currentPage >= totalPages));
             }
 
-            // Main Fetch Functions...
+            // ==========================================
+            // MAIN FETCH FUNCTIONS
+            // ==========================================
             function fetchPage(page, forceRefresh = false) {
                 if (page < 1) return;
                 
@@ -686,50 +669,83 @@
                     .finally(() => navRefresh.classList.remove('spin'));
             }
 
-            function showWatchlist() {
+            // ==========================================
+            // PAGINATED WATCHLIST & HISTORY
+            // ==========================================
+            function showWatchlist(page = 1) {
                 if (!isSearchMode && !isWatchlistMode && !isHistoryMode) homeScrollPosition = window.scrollY;
-                if (isWatchlistMode) { window.scrollTo(0,0); return; }
 
                 isWatchlistMode = true; isSearchMode = false; isHistoryMode = false;
                 searchWrapper.classList.remove('show');
-                setActiveNav(navWatchlist); toggleTGButton(true); currentPage = 1;
+                setActiveNav(navWatchlist); toggleTGButton(true); 
+                currentPage = page;
 
-                const list = getWatchlist();
-                totalVideosEl.textContent = list.length;
-                currentPageInfoEl.textContent = "1"; lastPageInfoEl.textContent = "1";
+                const fullList = getWatchlist();
+                totalPages = Math.ceil(fullList.length / LOCAL_PER_PAGE) || 1;
                 
-                renderVideos(list); buildPageButtons(); window.scrollTo(0,0);
+                // Slice for current page
+                const startIndex = (page - 1) * LOCAL_PER_PAGE;
+                const paginatedList = fullList.slice(startIndex, startIndex + LOCAL_PER_PAGE);
+
+                totalVideosEl.textContent = fullList.length;
+                currentPageInfoEl.textContent = page;
+                lastPageInfoEl.textContent = totalPages;
+
+                if (fullList.length === 0) {
+                    videoContainer.innerHTML = `<div class="loading-box" style="color:#88ddff;border-color:#88ddff44"><span>📭 Your watch list is empty.</span></div>`;
+                } else {
+                    renderVideos(paginatedList); 
+                }
+                buildPageButtons(); 
+                window.scrollTo(0,0);
             }
 
-            function showHistory() {
+            function showHistory(page = 1) {
                 if (!isSearchMode && !isWatchlistMode && !isHistoryMode) homeScrollPosition = window.scrollY;
-                if (isHistoryMode) { window.scrollTo(0,0); return; }
 
                 isHistoryMode = true; isWatchlistMode = false; isSearchMode = false;
                 searchWrapper.classList.remove('show');
-                setActiveNav(navHistory); toggleTGButton(true); currentPage = 1;
+                setActiveNav(navHistory); toggleTGButton(true); 
+                currentPage = page;
 
-                const list = getHistory();
-                totalVideosEl.textContent = list.length;
-                currentPageInfoEl.textContent = "1"; lastPageInfoEl.textContent = "1";
+                const fullList = getHistory();
+                totalPages = Math.ceil(fullList.length / LOCAL_PER_PAGE) || 1;
+                
+                // Slice for current page
+                const startIndex = (page - 1) * LOCAL_PER_PAGE;
+                const paginatedList = fullList.slice(startIndex, startIndex + LOCAL_PER_PAGE);
 
-                renderVideos(list); buildPageButtons(); window.scrollTo(0,0);
+                totalVideosEl.textContent = fullList.length;
+                currentPageInfoEl.textContent = page;
+                lastPageInfoEl.textContent = totalPages;
+
+                if (fullList.length === 0) {
+                    videoContainer.innerHTML = `<div class="loading-box" style="color:#88ddff;border-color:#88ddff44"><span>🕒 You haven't watched any videos yet.</span></div>`;
+                } else {
+                    renderVideos(paginatedList); 
+                }
+                buildPageButtons(); 
+                window.scrollTo(0,0);
             }
 
             function goToPage(page) {
-                if (isWatchlistMode || isHistoryMode) return;
-                if (isSearchMode) fetchSearch(currentSearchQuery, page);
+                if (isWatchlistMode) showWatchlist(page);
+                else if (isHistoryMode) showHistory(page);
+                else if (isSearchMode) fetchSearch(currentSearchQuery, page);
                 else fetchPage(page);
             }
 
+            // ==========================================
+            // NAVIGATION BUTTONS
+            // ==========================================
             navHome.addEventListener('click', () => fetchPage(currentPage));
-            navHistory.addEventListener('click', showHistory);
-            navWatchlist.addEventListener('click', showWatchlist);
+            navHistory.addEventListener('click', () => showHistory(1));
+            navWatchlist.addEventListener('click', () => showWatchlist(1));
             
             navRefresh.addEventListener('click', () => {
                 navRefresh.classList.add('spin');
-                if (isWatchlistMode) { showWatchlist(); setTimeout(() => navRefresh.classList.remove('spin'), 500); }
-                else if (isHistoryMode) { showHistory(); setTimeout(() => navRefresh.classList.remove('spin'), 500); }
+                if (isWatchlistMode) { showWatchlist(currentPage); setTimeout(() => navRefresh.classList.remove('spin'), 500); }
+                else if (isHistoryMode) { showHistory(currentPage); setTimeout(() => navRefresh.classList.remove('spin'), 500); }
                 else if (isSearchMode) { fetchSearch(currentSearchQuery, 1); }
                 else { homeCache.page = 0; fetchPage(currentPage, true); }
             });
